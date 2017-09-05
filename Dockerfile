@@ -27,21 +27,11 @@ WORKDIR /root
 
 ENV GPAC_VERSION 0.7.1
 
-# Install correct ffmpeg from Ubuntu Multimedia ppa
-# https://launchpad.net/~jonathonf/+archive/ubuntu/ffmpeg-3
-RUN \
-  add-apt-repository -y ppa:jonathonf/ffmpeg-3 && \
-  apt-get update && \
-  apt-get install -y --no-install-recommends libx264-dev ffmpeg
-
 # Install required libraries
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
     git \
-    # Install arecord and alsa
-    alsa \
-    alsa-tools \
     # GPAC official dependencies
     dvb-apps \
     firefox-dev \
@@ -88,7 +78,18 @@ RUN \
   # Install dashcast manually, for some reason the make script fails to install it
   install  -m 755 bin/gcc/DashCast "/usr/local/bin"
 
-# Install tools
+# Install correct ffmpeg from Ubuntu Multimedia ppa
+# https://launchpad.net/~jonathonf/+archive/ubuntu/ffmpeg-3
+RUN \
+  add-apt-repository -y ppa:jonathonf/ffmpeg-3 && \
+  apt-get update && \
+  apt-get install -y --no-install-recommends libx264-dev ffmpeg
+
+# Install ALSA
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  alsa-utils
+
+# Install misc tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
     # General tools
     htop \
