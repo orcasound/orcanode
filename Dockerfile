@@ -39,6 +39,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
     git \
+    # Install arecord and alsa
+    alsa \
+    alsa-tools \
     # GPAC official dependencies
     dvb-apps \
     firefox-dev \
@@ -89,6 +92,7 @@ RUN \
 RUN apt-get update && apt-get install -y --no-install-recommends \
     # General tools
     htop \
+    nano \
     sox \
     wget
 
