@@ -106,3 +106,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends s3fs
 
 # Clean up APT when done.
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+#
+#  Add dashcast configuration file 
+#
+ADD . dashcast.conf
