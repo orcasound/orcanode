@@ -20,6 +20,7 @@ USER root
 #   purpose, because not ignoring them will break multi-user containers.
 #
 #   Workaround:
+#
 RUN echo /root > /etc/container_environment/HOME
 WORKDIR /root
 
