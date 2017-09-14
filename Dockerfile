@@ -90,6 +90,14 @@ RUN \
 RUN apt-get update && apt-get install -y --no-install-recommends \
   alsa-utils
 
+# Install npm and http-server for testing
+# Based on https://nodesource.com/blog/installing-node-js-tutorial-ubuntu/
+RUN curl -sL https://deb.nodesource.com/setup_6.x | bash - && \
+  apt-get update && apt-get install -y --no-install-recommends nodejs
+
+RUN npm install http-server -g
+
+
 # Install misc tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
     # General tools
@@ -98,16 +106,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     sox \
     wget
 
-############################### Install s3fs ##############################
+############################### Install s3fs ###################################
 
 RUN apt-get update && apt-get install -y --no-install-recommends s3fs
+
+############################### Copy files #####################################
+
+COPY dashcast.conf .
+
+################################## TODO ########################################
+# Add the following commands:
+#   - `http-server -p 8080 --cors -c-1`
+#   - `DashCast -af alsa -a plughw:0,0 -seg-dur 5000 -conf dashcast.conf -live`
 
 ################################# Miscellaneous ################################
 
 # Clean up APT when done.
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-#
-#  Add dashcast configuration file 
-#
-ADD . dashcast.conf
