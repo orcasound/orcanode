@@ -20,6 +20,7 @@ USER root
 #   purpose, because not ignoring them will break multi-user containers.
 #
 #   Workaround:
+#
 RUN echo /root > /etc/container_environment/HOME
 WORKDIR /root
 
@@ -68,6 +69,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     x11proto-video-dev \
     zlib1g-dev
 
+# Install correct ffmpeg from Ubuntu Multimedia ppa
+# https://launchpad.net/~jonathonf/+archive/ubuntu/ffmpeg-3
+RUN \
+  add-apt-repository -y ppa:jonathonf/ffmpeg-3 && \
+  apt-get update && \
+  apt-get install -y --no-install-recommends libx264-dev ffmpeg
+
 RUN \
   git clone --branch v$GPAC_VERSION https://github.com/gpac/gpac.git && \
   cd gpac && \
@@ -77,13 +85,6 @@ RUN \
   make install-lib && \
   # Install dashcast manually, for some reason the make script fails to install it
   install  -m 755 bin/gcc/DashCast "/usr/local/bin"
-
-# Install correct ffmpeg from Ubuntu Multimedia ppa
-# https://launchpad.net/~jonathonf/+archive/ubuntu/ffmpeg-3
-RUN \
-  add-apt-repository -y ppa:jonathonf/ffmpeg-3 && \
-  apt-get update && \
-  apt-get install -y --no-install-recommends libx264-dev ffmpeg
 
 # Install ALSA
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -105,3 +106,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends s3fs
 
 # Clean up APT when done.
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+#
+#  Add dashcast configuration file 
+#
+ADD . dashcast.conf
