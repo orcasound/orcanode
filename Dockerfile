@@ -112,7 +112,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends s3fs
 
 ############################### Copy files #####################################
 
-COPY dashcast.conf .
+COPY . .
 
 ################################## TODO ########################################
 # Add the following commands:
