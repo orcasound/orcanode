@@ -1,7 +1,7 @@
 version: "3"
 services:
   streaming:
-    image: orcasound/orcanode
+    image: orcasound/orcanode:auto_streaming
     build: ./
     command: /sbin/my_init -- ./stream.sh
     restart: always
