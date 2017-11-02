@@ -112,12 +112,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends s3fs
 
 ############################### Copy files #####################################
 
-COPY dashcast.conf .
+COPY . .
 
 ################################## TODO ########################################
 # Add the following commands:
-#   - `http-server -p 8080 --cors -c-1`
-#   - `DashCast -af alsa -a plughw:0,0 -seg-dur 5000 -conf dashcast.conf -live`
+#   - http-server -p 8080 --cors -c-1
+#   - DashCast -af alsa -a plughw:0,0 -seg-dur 5000 -conf dashcast.conf -live
+#   - s3fs dev-streaming-orcasound-net /mnt/dev-streaming-orcasound-net/
 
 ################################# Miscellaneous ################################
 
