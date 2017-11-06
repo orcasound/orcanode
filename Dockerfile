@@ -26,8 +26,6 @@ WORKDIR /root
 
 ############################### Install GPAC ##############################
 
-ENV GPAC_VERSION 0.7.1
-
 # Install required libraries
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
@@ -76,26 +74,24 @@ RUN \
   apt-get update && \
   apt-get install -y --no-install-recommends libx264-dev ffmpeg
 
-RUN \
-  git clone --branch v$GPAC_VERSION https://github.com/gpac/gpac.git && \
-  cd gpac && \
-  ./configure && \
-  make && \
-  make install && \
-  make install-lib && \
-  # Install dashcast manually, for some reason the make script fails to install it
-  install  -m 755 bin/gcc/DashCast "/usr/local/bin"
-
-# Install ALSA
+# Install ALSA and GPAC
 RUN apt-get update && apt-get install -y --no-install-recommends \
-  alsa-utils
+  alsa-utils \
+  gpac
 
 # Install npm and http-server for testing
 # Based on https://nodesource.com/blog/installing-node-js-tutorial-ubuntu/
 RUN curl -sL https://deb.nodesource.com/setup_6.x | bash - && \
   apt-get update && apt-get install -y --no-install-recommends nodejs
 
-RUN npm install http-server -g
+RUN npm install -g \
+  http-server \
+  jsonlint
+
+# install test-engine-live-tools
+RUN git clone https://github.com/ebu/test-engine-live-tools.git && \
+  cd test-engine-live-tools && \
+  npm install
 
 
 # Install misc tools
