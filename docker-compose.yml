@@ -1,9 +1,9 @@
 version: "3"
 services:
   streaming:
-    image: orcasound/orcanode:mp4box
+    image: orcasound/orcanode:rpi
     build: ./
-    command: /sbin/my_init -- ./stream.sh
+    command: ./stream.sh
     restart: always
     env_file: .env
     ports:
