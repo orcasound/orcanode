@@ -22,7 +22,7 @@ WORKDIR /root
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
-    git \
+    git
 
 # Install correct ffmpeg from Ubuntu Multimedia ppa
 # https://launchpad.net/~jonathonf/+archive/ubuntu/ffmpeg-3
