@@ -2,7 +2,7 @@
 
 # Use raspbian image since x86 images won't work
 # https://docs.resin.io/runtime/resin-base-images/
-FROM resin/rpi-raspbian:wheezy-20171108
+FROM resin/rpi-raspbian:stretch-20171108
 MAINTAINER Orcasound <contact@orcasound.net>
 
 # Upgrade OS
@@ -21,13 +21,12 @@ WORKDIR /root
 # Install required libraries
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    software-properties-common \
     curl \
     git
 
-# Install correct ffmpeg from Ubuntu Multimedia ppa
-# https://launchpad.net/~jonathonf/+archive/ubuntu/ffmpeg-3
+# Install ffmpeg
 RUN \
-  add-apt-repository -y ppa:jonathonf/ffmpeg-3 && \
   apt-get update && \
   apt-get install -y --no-install-recommends libx264-dev ffmpeg
 
