@@ -56,6 +56,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     htop \
     nano \
     sox \
+    tmux \
     wget
 
 ############################### Install s3fs ###################################
