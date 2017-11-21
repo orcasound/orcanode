@@ -1,8 +1,10 @@
 # Node Dockerfile for hydrophone streaming
 
-# Use raspbian image since x86 images won't work
-# https://docs.resin.io/runtime/resin-base-images/
-FROM resin/rpi-raspbian:stretch-20171108
+# Use official debian image, but pull the armhf (v7+) image explicitly because
+# Docker currently has a bug where armel is used instead when relying on
+# multiarch manifest: https://github.com/moby/moby/issues/34875
+# When this is fixed, this can be changed to just `FROM debian:stretch-slim`
+FROM arm32v7/debian:stretch-slim
 MAINTAINER Orcasound <contact@orcasound.net>
 
 # Upgrade OS
@@ -23,6 +25,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     software-properties-common \
     curl \
+    gnupg \
+    wget \
     git
 
 # Install ffmpeg
@@ -36,7 +40,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   gpac
 
 # Install npm and http-server for testing
-# Based on https://nodesource.com/blog/installing-node-js-tutorial-ubuntu/
+# Based on https://nodesource.com/blog/installing-node-js-tutorial-debian-linux/
 RUN curl -sL https://deb.nodesource.com/setup_6.x | bash - && \
   apt-get update && apt-get install -y --no-install-recommends nodejs
 
