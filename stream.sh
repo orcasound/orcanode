@@ -9,6 +9,7 @@ s3fs -o default_acl=public-read dev-streaming-orcasound-net /mnt/dev-streaming-o
 timestamp=$(date +%s)
 # Make output dir
 mkdir -p /mnt/dev-streaming-orcasound-net/$NODE_NAME/$timestamp
+mkdir -p /mnt/dev-lossless-orcasound-net/$NODE_NAME
 # Output timestamp for this (latest) stream
 echo $timestamp > /mnt/dev-streaming-orcasound-net/$NODE_NAME/latest.txt
 # symlink to s3 for output
