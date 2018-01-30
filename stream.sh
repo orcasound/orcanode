@@ -26,7 +26,9 @@ echo $timestamp > /mnt/dev-streaming-orcasound-net/$NODE_NAME/latest.txt
 
 #### Set up temporary directories and symbolic links
 
-mkdir -p /tmp/dash_segment_input_dir
+# SV added this, but then commented out for fear it was causing conflict with test-engine-live-tools...
+# ...possibly during read/write/move interactions with s3fs
+#mkdir -p /tmp/dash_segment_input_dir
 
 # symlinks to s3 for output
 ln -s /mnt/dev-streaming-orcasound-net/$NODE_NAME/dash/$timestamp /tmp/dash_output_dir
@@ -36,13 +38,32 @@ ln -s /mnt/dev-archive-orcasound-net/$NODE_NAME/ /tmp/flac
 
 #### Generate stream segments and/or lossless archive
 
-## Streaming DASH/HLS with flac archive 
-# mono input
-ffmpeg -f alsa -i hw:$AUDIO_HW_ID -ac 1 -ar 44100 -sample_fmt s32 -acodec flac \
-       -f segment -segment_time 00:00:05.00 -strftime 1 "/tmp/flac/%Y-%m-%d_%H-%M-%S_$NODE_NAME_192-32.flac" \
+
+echo "Node name is $NODE_NAME"
+echo "Node type is $NODE_TYPE"
+
+if [ $NODE_TYPE = "research" ]; then
+	SAMPLE_RATE=192000
+	STREAM_RATE=48000 ## Is it efficient to specify this so mpegts isn't hit by 4x the uncompressed data?
+	echo "Asking ffmpeg to write 30-second $SAMPLE_RATE HZ hi-res flac files" 
+	## Streaming DASH/HLS with hi-res flac archive 
+	ffmpeg -f alsa -ac $CHANNELS -ar $SAMPLE_RATE -i hw:$AUDIO_HW_ID -ac $CHANNELS -ar $SAMPLE_RATE -sample_fmt s32 -acodec flac \
+       -f segment -segment_time 00:00:30.00 -strftime 1 "/tmp/flac/%Y-%m-%d_%H-%M-%S_$NODE_NAME-$SAMPLE_RATE-$CHANNELS.flac" \
        -f segment -segment_list "/tmp/hls/live.m3u8" -segment_list_flags +live -segment_time 5 -segment_format \
-       mpegts -ac 1 -acodec aac "/tmp/hls/live%03d.ts" \
-       -f mpegts -ac 1 udp://127.0.0.1:1234 &
+       mpegts -ar $STREAM_RATE -ac 2 -acodec aac "/tmp/hls/live%03d.ts" \
+       -f mpegts -ar $STREAM_RATE -ac 2 udp://127.0.0.1:1234 &
+else
+	SAMPLE_RATE=48000
+	STREAM_RATE=48000
+	echo "Asking ffmpeg to write 30-second $SAMPLE_RATE HZ lo-res flac files" 
+	## Streaming DASH/HLS with low-res flac archive 
+	ffmpeg -f alsa -ac $CHANNELS -ar $SAMPLE_RATE -i hw:$AUDIO_HW_ID -ac $CHANNELS -ar $SAMPLE_RATE -sample_fmt s32 -acodec flac \
+       -f segment -segment_time 00:00:30.00 -strftime 1 "/tmp/flac/%Y-%m-%d_%H-%M-%S_$NODE_NAME-$SAMPLE_RATE-$CHANNELS.flac" \
+       -f segment -segment_list "/tmp/hls/live.m3u8" -segment_list_flags +live -segment_time 5 -segment_format \
+       mpegts -ac 2 -acodec aac "/tmp/hls/live%03d.ts" \
+       -f mpegts -ac 2 udp://127.0.0.1:1234 &
+fi
+echo "Sampling $CHANNELS channels from $AUDIO_HW_ID at $SAMPLE_RATE Hz with bitrate of 32 bits/sample..."
 
 #### Stream with test engine live tools
 ./test-engine-live-tools/bin/live-stream -c ./config_audio.json udp://127.0.0.1:1234
