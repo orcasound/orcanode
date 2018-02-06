@@ -7,7 +7,7 @@
     "commandPrefix": [ "-re", "-i", "-", "-threads", "0", "-y" ],
     "representations": {
     "audio": [
-        "-map", "0:0", "-vn", "-acodec", "aac", "-strict", "-2", "-ar", "48000", "-ac", "1",
+        "-map", "0:0", "-vn", "-acodec", "aac", "-strict", "-2", "-ar", "48000", "-ac", "2",
         "-f", "segment", "-segment_time", "15", "-segment_format", "mpegts"
       ]
     }
