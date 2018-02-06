@@ -2,7 +2,7 @@
 
 # Use official debian image
 FROM debian:stretch-slim
-MAINTAINER Orcasound <contact@orcasound.net>
+MAINTAINER Orcasound <orcanode-devs@orcasound.net>
 
 # Upgrade OS
 RUN apt-get update && apt-get upgrade -y -o Dpkg::Options::="--force-confold"
@@ -69,10 +69,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends s3fs
 COPY . .
 
 ################################## TODO ########################################
-# Add the following commands:
-#   - http-server -p 8080 --cors -c-1
-#   - DashCast -af alsa -a plughw:0,0 -seg-dur 5000 -conf dashcast.conf -live
-#   - s3fs dev-streaming-orcasound-net /mnt/dev-streaming-orcasound-net/
+# Do the following:
+#   - Add pisound driver curl command  
+#   - Add other audio drivers and configure via CLI if possible?
+#   - Remove "misc tools" and other installs no longer needed (upon Resin.io deployment)?
 
 ################################# Miscellaneous ################################
 
