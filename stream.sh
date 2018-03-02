@@ -31,6 +31,9 @@ echo $timestamp > /mnt/dev-streaming-orcasound-net/$NODE_NAME/latest.txt
 #mkdir -p /tmp/dash_segment_input_dir
 
 # symlinks to s3 for output
+rm /tmp/dash_output_dir
+rm /tmp/hls
+rm /tmp/flac
 ln -s /mnt/dev-streaming-orcasound-net/$NODE_NAME/dash/$timestamp /tmp/dash_output_dir
 ln -s /mnt/dev-streaming-orcasound-net/$NODE_NAME/hls/$timestamp /tmp/hls
 ln -s /mnt/dev-archive-orcasound-net/$NODE_NAME/ /tmp/flac
@@ -38,14 +41,13 @@ ln -s /mnt/dev-archive-orcasound-net/$NODE_NAME/ /tmp/flac
 
 #### Generate stream segments and/or lossless archive
 
-
 echo "Node name is $NODE_NAME"
 echo "Node type is $NODE_TYPE"
 
 if [ $NODE_TYPE = "research" ]; then
 	SAMPLE_RATE=192000
 	STREAM_RATE=48000 ## Is it efficient to specify this so mpegts isn't hit by 4x the uncompressed data?
-	echo "Asking ffmpeg to write 30-second $SAMPLE_RATE HZ hi-res flac files" 
+	echo "Asking ffmpeg to write 30-second $SAMPLE_RATE Hz hi-res flac files..." 
 	## Streaming DASH/HLS with hi-res flac archive 
 	ffmpeg -f alsa -ac $CHANNELS -ar $SAMPLE_RATE -i hw:$AUDIO_HW_ID -ac $CHANNELS -ar $SAMPLE_RATE -sample_fmt s32 -acodec flac \
        -f segment -segment_time 00:00:30.00 -strftime 1 "/tmp/flac/%Y-%m-%d_%H-%M-%S_$NODE_NAME-$SAMPLE_RATE-$CHANNELS.flac" \
@@ -55,7 +57,7 @@ if [ $NODE_TYPE = "research" ]; then
 else
 	SAMPLE_RATE=48000
 	STREAM_RATE=48000
-	echo "Asking ffmpeg to write 30-second $SAMPLE_RATE HZ lo-res flac files" 
+	echo "Asking ffmpeg to write 30-second $SAMPLE_RATE Hz lo-res flac files..." 
 	## Streaming DASH/HLS with low-res flac archive 
 	ffmpeg -f alsa -ac $CHANNELS -ar $SAMPLE_RATE -i hw:$AUDIO_HW_ID -ac $CHANNELS -ar $SAMPLE_RATE -sample_fmt s32 -acodec flac \
        -f segment -segment_time 00:00:30.00 -strftime 1 "/tmp/flac/%Y-%m-%d_%H-%M-%S_$NODE_NAME-$SAMPLE_RATE-$CHANNELS.flac" \
