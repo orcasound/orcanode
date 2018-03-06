@@ -17,7 +17,7 @@
       "-dash-ctx", "/tmp/dash_output_dir/dash-live.txt", "-dash", "15000", "-rap", "-ast-offset", "12",
     "-no-frags-default", "-bs-switching", "no","-mpd-refresh", "5",  "-min-buffer", "15000", "-url-template", "-time-shift",
       "-1", "-mpd-title", "MPEG-DASH live stream", "-mpd-info-url", "http://www.orcasound.net/", "-keep-utc", "-segment-name",
-      "live_$RepresentationID$_", "-out", "/tmp/dash_output_dir/live", "-dynamic", "-subsegs-per-sidx", "-1"
+      "live_$RepresentationID$_", "-out", "/tmp/dash_output_dir/live", "-dynamic", "-subsegs-per-sidx", "-1", "-tmp", "/tmp/"
     ]
   }
 }
