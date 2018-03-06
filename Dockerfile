@@ -48,11 +48,10 @@ RUN npm install -g \
   http-server \
   jsonlint
 
-# install test-engine-live-tools
+# Install test-engine-live-tools
 RUN git clone https://github.com/ebu/test-engine-live-tools.git && \
   cd test-engine-live-tools && \
   npm install
-
 
 # Install misc tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
