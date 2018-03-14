@@ -55,6 +55,12 @@ if [ $NODE_TYPE = "research" ]; then
        -f segment -segment_list "/tmp/hls/live.m3u8" -segment_list_flags +live -segment_time 5 -segment_format \
        mpegts -ar $STREAM_RATE -ac 2 -acodec aac "/tmp/hls/live%03d.ts" \
        -f mpegts -ar $STREAM_RATE -ac 2 udp://127.0.0.1:1234 &
+elif [ $NODE_TYPE = "debug" ]; then
+  SAMPLE_RATE=48000
+  STREAM_RATE=48000
+  echo "Asking ffmpeg to stream mpegts..." 
+  ## Streaming DASH via mpegts
+  ffmpeg -t 0 -f alsa -i hw:$AUDIO_HW_ID -ac $CHANNELS -f mpegts udp://127.0.0.1:1234 &
 else
 	SAMPLE_RATE=48000
 	STREAM_RATE=48000
