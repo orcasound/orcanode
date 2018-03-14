@@ -41,6 +41,7 @@ ln -s /mnt/dev-archive-orcasound-net/$NODE_NAME/ /tmp/flac
 
 #### Generate stream segments and/or lossless archive
 
+echo "Node started at $timestamp"
 echo "Node name is $NODE_NAME"
 echo "Node type is $NODE_TYPE"
 
