@@ -55,12 +55,24 @@ if [ $NODE_TYPE = "research" ]; then
        -f segment -segment_list "/tmp/hls/live.m3u8" -segment_list_flags +live -segment_time 5 -segment_format \
        mpegts -ar $STREAM_RATE -ac 2 -acodec aac "/tmp/hls/live%03d.ts" \
        -f mpegts -ar $STREAM_RATE -ac 2 udp://127.0.0.1:1234 &
+	#### Stream with test engine live tools
+	./test-engine-live-tools/bin/live-stream -c ./config_audio.json udp://127.0.0.1:1234
 elif [ $NODE_TYPE = "debug" ]; then
   SAMPLE_RATE=48000
   STREAM_RATE=48000
   echo "Asking ffmpeg to stream mpegts..." 
-  ## Streaming DASH via mpegts
+  ## Streaming DASH only via mpegts
   ffmpeg -t 0 -f alsa -i hw:$AUDIO_HW_ID -ac $CHANNELS -f mpegts udp://127.0.0.1:1234 &
+  #### Stream with test engine live tools
+  ./test-engine-live-tools/bin/live-stream -c ./config_audio.json udp://127.0.0.1:1234
+elif [ $NODE_TYPE = "hls-only" ]; then
+  SAMPLE_RATE=48000
+  STREAM_RATE=48000
+  echo "Asking ffmpeg to stream only HLS segments..." 
+  ## Streaming HLS only via mpegts
+	ffmpeg -f alsa -ac $CHANNELS -ar $SAMPLE_RATE -i hw:$AUDIO_HW_ID -ac $CHANNELS \ 
+       -f segment -segment_list "/tmp/hls/live.m3u8" -segment_list_flags +live -segment_time 5 -segment_format \
+       mpegts -ar $STREAM_RATE -ac 2 -acodec aac "/tmp/hls/live%03d.ts"
 else
 	SAMPLE_RATE=48000
 	STREAM_RATE=48000
@@ -71,8 +83,8 @@ else
        -f segment -segment_list "/tmp/hls/live.m3u8" -segment_list_flags +live -segment_time 5 -segment_format \
        mpegts -ac 2 -acodec aac "/tmp/hls/live%03d.ts" \
        -f mpegts -ac 2 udp://127.0.0.1:1234 &
+	#### Stream with test engine live tools
+	./test-engine-live-tools/bin/live-stream -c ./config_audio.json udp://127.0.0.1:1234
 fi
 echo "Sampling $CHANNELS channels from $AUDIO_HW_ID at $SAMPLE_RATE Hz with bitrate of 32 bits/sample..."
 
-#### Stream with test engine live tools
-./test-engine-live-tools/bin/live-stream -c ./config_audio.json udp://127.0.0.1:1234
