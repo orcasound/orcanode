@@ -35,7 +35,7 @@ ln -s /mnt/dev-streaming-orcasound-net/$NODE_NAME/hls/$timestamp /tmp/hls
 ln -s /mnt/dev-archive-orcasound-net/$NODE_NAME/ /tmp/flac
 
 
-#### Generate stream segments and/or lossless archive
+#### Generate stream segments and manifests, and/or lossless archive
 
 echo "Node started at $timestamp"
 echo "Node name is $NODE_NAME"
@@ -54,21 +54,21 @@ if [ $NODE_TYPE = "research" ]; then
 	#### Stream with test engine live tools
 	./test-engine-live-tools/bin/live-stream -c ./config_audio.json udp://127.0.0.1:1234
 elif [ $NODE_TYPE = "debug" ]; then
-  SAMPLE_RATE=48000
-  STREAM_RATE=48000
-  echo "Asking ffmpeg to stream mpegts..." 
-  ## Streaming DASH only via mpegts
-  ffmpeg -t 0 -f alsa -i hw:$AUDIO_HW_ID -ac $CHANNELS -f mpegts udp://127.0.0.1:1234 &
-  #### Stream with test engine live tools
-  ./test-engine-live-tools/bin/live-stream -c ./config_audio.json udp://127.0.0.1:1234
+        SAMPLE_RATE=48000
+        STREAM_RATE=48000
+        echo "Asking ffmpeg to stream mpegts..." 
+  	## Streaming DASH only via mpegts
+  	ffmpeg -t 0 -f alsa -i hw:$AUDIO_HW_ID -ac $CHANNELS -f mpegts udp://127.0.0.1:1234 &
+  	#### Stream with test engine live tools
+  	./test-engine-live-tools/bin/live-stream -c ./config_audio.json udp://127.0.0.1:1234
 elif [ $NODE_TYPE = "hls-only" ]; then
-  SAMPLE_RATE=48000
-  STREAM_RATE=48000
-  echo "Asking ffmpeg to stream only HLS segments..." 
-  ## Streaming HLS only via mpegts
+  	SAMPLE_RATE=48000
+  	STREAM_RATE=48000
+  	echo "Asking ffmpeg to stream only HLS segments..." 
+  	## Streaming HLS only via mpegts
 	ffmpeg -f alsa -ac $CHANNELS -ar $SAMPLE_RATE -i hw:$AUDIO_HW_ID -ac $CHANNELS \ 
-       -f segment -segment_list "/tmp/hls/live.m3u8" -segment_list_flags +live -segment_time 5 -segment_format \
-       mpegts -ar $STREAM_RATE -ac 2 -acodec aac "/tmp/hls/live%03d.ts"
+        -f segment -segment_list "/tmp/hls/live.m3u8" -segment_list_flags +live -segment_time 5 -segment_format \
+        mpegts -ar $STREAM_RATE -ac 2 -acodec aac "/tmp/hls/live%03d.ts"
 else
 	SAMPLE_RATE=48000
 	STREAM_RATE=48000
