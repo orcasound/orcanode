@@ -26,10 +26,6 @@ echo $timestamp > /mnt/dev-streaming-orcasound-net/$NODE_NAME/latest.txt
 
 #### Set up temporary directories and symbolic links
 
-# SV added this, but then commented out for fear it was causing conflict with test-engine-live-tools...
-# ...possibly during read/write/move interactions with s3fs
-#mkdir -p /tmp/dash_segment_input_dir
-
 # symlinks to s3 for output
 rm /tmp/dash_output_dir
 rm /tmp/hls
