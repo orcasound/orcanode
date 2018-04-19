@@ -44,6 +44,7 @@ echo "Node type is $NODE_TYPE"
 if [ $NODE_TYPE = "research" ]; then
 	SAMPLE_RATE=192000
 	STREAM_RATE=48000 ## Is it efficient to specify this so mpegts isn't hit by 4x the uncompressed data?
+	echo "Sampling $CHANNELS channels from $AUDIO_HW_ID at $SAMPLE_RATE Hz with bitrate of 32 bits/sample..."
 	echo "Asking ffmpeg to write 30-second $SAMPLE_RATE Hz hi-res flac files..." 
 	## Streaming DASH/HLS with hi-res flac archive 
 	ffmpeg -f alsa -ac $CHANNELS -ar $SAMPLE_RATE -i hw:$AUDIO_HW_ID -ac $CHANNELS -ar $SAMPLE_RATE -sample_fmt s32 -acodec flac \
@@ -56,7 +57,8 @@ if [ $NODE_TYPE = "research" ]; then
 elif [ $NODE_TYPE = "debug" ]; then
         SAMPLE_RATE=48000
         STREAM_RATE=48000
-        echo "Asking ffmpeg to stream mpegts..." 
+	echo "Sampling $CHANNELS channels from $AUDIO_HW_ID at $SAMPLE_RATE Hz with bitrate of 32 bits/sample..."
+        echo "Asking ffmpeg to stream via mpegts at $STREAM_RATE Hz..." 
   	## Streaming DASH only via mpegts
   	ffmpeg -t 0 -f alsa -i hw:$AUDIO_HW_ID -ac $CHANNELS -f mpegts udp://127.0.0.1:1234 &
   	#### Stream with test engine live tools
@@ -64,7 +66,8 @@ elif [ $NODE_TYPE = "debug" ]; then
 elif [ $NODE_TYPE = "hls-only" ]; then
   	SAMPLE_RATE=48000
   	STREAM_RATE=48000
-  	echo "Asking ffmpeg to stream only HLS segments..." 
+	echo "Sampling $CHANNELS channels from $AUDIO_HW_ID at $SAMPLE_RATE Hz with bitrate of 32 bits/sample..."
+  	echo "Asking ffmpeg to stream only HLS segments at $STREAM_RATE Hz......" 
   	## Streaming HLS only via mpegts
 	ffmpeg -f alsa -ac $CHANNELS -ar $SAMPLE_RATE -i hw:$AUDIO_HW_ID -ac $CHANNELS \ 
         -f segment -segment_list "/tmp/hls/live.m3u8" -segment_list_flags +live -segment_time 5 -segment_format \
@@ -72,7 +75,8 @@ elif [ $NODE_TYPE = "hls-only" ]; then
 else
 	SAMPLE_RATE=48000
 	STREAM_RATE=48000
-	echo "Asking ffmpeg to write 30-second $SAMPLE_RATE Hz lo-res flac files..." 
+	echo "Sampling $CHANNELS channels from $AUDIO_HW_ID at $SAMPLE_RATE Hz with bitrate of 32 bits/sample..."
+	echo "Asking ffmpeg to write 30-second $SAMPLE_RATE Hz lo-res flac files while streaming in both DASH and HLS..." 
 	## Streaming DASH/HLS with low-res flac archive 
 	ffmpeg -f alsa -ac $CHANNELS -ar $SAMPLE_RATE -i hw:$AUDIO_HW_ID -ac $CHANNELS -ar $SAMPLE_RATE -sample_fmt s32 -acodec flac \
        -f segment -segment_time 00:00:30.00 -strftime 1 "/tmp/flac/%Y-%m-%d_%H-%M-%S_$NODE_NAME-$SAMPLE_RATE-$CHANNELS.flac" \
@@ -82,5 +86,4 @@ else
 	#### Stream with test engine live tools
 	./test-engine-live-tools/bin/live-stream -c ./config_audio.json udp://127.0.0.1:1234
 fi
-echo "Sampling $CHANNELS channels from $AUDIO_HW_ID at $SAMPLE_RATE Hz with bitrate of 32 bits/sample..."
 
