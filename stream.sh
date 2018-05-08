@@ -10,7 +10,7 @@ mkdir -p /mnt/dev-archive-orcasound-net
 
 # Start s3fs
 s3fs -o default_acl=public-read --debug -o dbglevel=info dev-streaming-orcasound-net /mnt/dev-streaming-orcasound-net/
-s3fs -o default_acl=public-read dev-archive-orcasound-net /mnt/dev-archive-orcasound-net/
+s3fs -o default_acl=public-read --debug -0 dbglevel=info dev-archive-orcasound-net /mnt/dev-archive-orcasound-net/
 
 # Get current timestamp
 timestamp=$(date +%s)
