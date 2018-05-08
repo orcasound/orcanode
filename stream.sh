@@ -15,18 +15,17 @@ s3fs -o default_acl=public-read --debug -o dbglevel=info dev-streaming-orcasound
 # Get current timestamp
 timestamp=$(date +%s)
 
-# Make output dirs
-mkdir -p /mnt/dev-archive-orcasound-net/$NODE_NAME
-mkdir -p /mnt/dev-streaming-orcasound-net/$NODE_NAME/hls/$timestamp
-#mkdir -p /mnt/dev-streaming-orcasound-net/$NODE_NAME/dash/$timestamp
+#### Set up local output directories
+mkdir -p /tmp/flac/
+mkdir -p /tmp/flac/$NODE_NAME
+mkdir -p /tmp/$NODE_NAME/hls
+mkdir -p /tmp/$NODE_NAME/hls/$timestamp
+#mkdir -p /tmp/$NODE_NAME/dash
+#mkdir -p /tmp/$NODE_NAME/dash/$timestamp
 
 # Output timestamp for this (latest) stream
-echo $timestamp > /mnt/dev-streaming-orcasound-net/$NODE_NAME/latest.txt
+echo $timestamp > /tmp/$NODE_NAME/latest.txt
 
-#### Set up local /tmp dirs
-mkdir -p /tmp/flac
-mkdir -p /tmp/hls
-#mkdir -p /tmp/dash_output_dir
 
 #### Generate stream segments and manifests, and/or lossless archive
 
@@ -41,7 +40,7 @@ if [ $NODE_TYPE = "research" ]; then
 	echo "Asking ffmpeg to write 30-second $SAMPLE_RATE Hz hi-res flac files..." 
 	## Streaming DASH/HLS with hi-res flac archive 
 	ffmpeg -f alsa -ac $CHANNELS -ar $SAMPLE_RATE -i hw:$AUDIO_HW_ID -ac $CHANNELS -ar $SAMPLE_RATE -sample_fmt s32 -acodec flac \
-       -f segment -segment_time 00:00:30.00 -strftime 1 "/mnt/dev-archive-orcasound-net/$NODE_NAME/%Y-%m-%d_%H-%M-%S_$NODE_NAME-$SAMPLE_RATE-$CHANNELS.flac" \
+       -f segment -segment_time 00:00:30.00 -strftime 1 "/tmp/flac/$NODE_NAME/%Y-%m-%d_%H-%M-%S_$NODE_NAME-$SAMPLE_RATE-$CHANNELS.flac" \
        -f segment -segment_list "/mnt/dev-streaming-orcasound-net/$NODE_NAME/hls/$timestamp/live.m3u8" -segment_list_flags +live -segment_time 10 -segment_format \
        mpegts -ar $STREAM_RATE -ac 2 -acodec aac "/mnt/dev-streaming-orcasound-net/$NODE_NAME/hls/$timestamp/live%03d.ts"
 elif [ $NODE_TYPE = "debug" ]; then
