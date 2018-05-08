@@ -26,8 +26,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     git
 
-# Install inotify-tools
-RUN apt-get install inotify-tools
+# Install inotify-tools and rsync
+RUN apt-get update && apt-get install -y --no-install-recommends inotify-tools rsync
 
 # Install ffmpeg
 RUN \
