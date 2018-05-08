@@ -77,16 +77,10 @@ else
 fi
 
 
-
-#!/bin/sh
-while inotifywait -e modify /var/log/messages; do
-  if tail -n1 /var/log/messages | grep apache; then
-    kdialog --msgbox "Blah blah Apache"
-  fi
+while true; do
+  inotifywait -r -e modify,attrib,close_write,move,create /tmp/$NODE_NAME /tmp/flac/$NODE_NAME
+  echo "Running rsync on $NODE_NAME..."
+  rsync -av /tmp/flac/$NODE_NAME /mnt/dev-archive-orcasound-net
+  rsync -av /tmp/$NODE_NAME /mnt/dev-streaming-orcasound-net
 done
-rsync
-/mnt/dev-streaming-orcasound-net
-
-
-
 
