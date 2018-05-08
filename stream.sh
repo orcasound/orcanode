@@ -22,6 +22,7 @@ mkdir -p /tmp/$NODE_NAME/hls
 mkdir -p /tmp/$NODE_NAME/hls/$timestamp
 #mkdir -p /tmp/$NODE_NAME/dash
 #mkdir -p /tmp/$NODE_NAME/dash/$timestamp
+#ln /tmp/$NODE_NAME/dash/$timestamp /tmp/dash_output_dir
 
 # Output timestamp for this (latest) stream
 echo $timestamp > /tmp/$NODE_NAME/latest.txt
