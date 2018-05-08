@@ -5,30 +5,28 @@
 #### Set up and mount s3fs bucket
 
 # Set up general output s3fs dirs locally
-mkdir -p /mnt/dev-streaming-orcasound-net
 mkdir -p /mnt/dev-archive-orcasound-net
+mkdir -p /mnt/dev-streaming-orcasound-net
 
-# Start s3fs
+# Start s3fs (with debug flags)
+s3fs -o default_acl=public-read --debug -o dbglevel=info dev-archive-orcasound-net /mnt/dev-archive-orcasound-net/
 s3fs -o default_acl=public-read --debug -o dbglevel=info dev-streaming-orcasound-net /mnt/dev-streaming-orcasound-net/
-s3fs -o default_acl=public-read --debug -0 dbglevel=info dev-archive-orcasound-net /mnt/dev-archive-orcasound-net/
 
 # Get current timestamp
 timestamp=$(date +%s)
 
 # Make output dirs
-mkdir -p /mnt/dev-streaming-orcasound-net/$NODE_NAME/dash/$timestamp
-mkdir -p /mnt/dev-streaming-orcasound-net/$NODE_NAME/hls/$timestamp
 mkdir -p /mnt/dev-archive-orcasound-net/$NODE_NAME
+mkdir -p /mnt/dev-streaming-orcasound-net/$NODE_NAME/hls/$timestamp
+#mkdir -p /mnt/dev-streaming-orcasound-net/$NODE_NAME/dash/$timestamp
 
 # Output timestamp for this (latest) stream
 echo $timestamp > /mnt/dev-streaming-orcasound-net/$NODE_NAME/latest.txt
 
-#### Set up local /tmp dirs, at least for MP4box/DASH segments
-mkdir -p /tmp/dash_output_dir
-#uncomment hls and flac dirs if ffmpeg still conflicts with s3fs when writing diretly to /mnt dirs
-#mkdir -p /tmp/hls
-#mkdir -p /tmp/flac
-
+#### Set up local /tmp dirs
+mkdir -p /tmp/flac
+mkdir -p /tmp/hls
+#mkdir -p /tmp/dash_output_dir
 
 #### Generate stream segments and manifests, and/or lossless archive
 
@@ -77,3 +75,6 @@ else
 	./test-engine-live-tools/bin/live-stream -c ./config_audio.json udp://127.0.0.1:1234
 fi
 
+
+rsync
+/mnt/dev-streaming-orcasound-net
