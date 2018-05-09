@@ -78,7 +78,7 @@ fi
 
 
 while true; do
-  inotifywait -r -e modify,attrib,close_write,move,create /tmp/$NODE_NAME /tmp/flac/$NODE_NAME
+  inotifywait -r -e close_write,create /tmp/$NODE_NAME /tmp/flac/$NODE_NAME
   echo "Running rsync on $NODE_NAME..."
   rsync -av /tmp/flac/$NODE_NAME /mnt/dev-archive-orcasound-net
   rsync -av /tmp/$NODE_NAME /mnt/dev-streaming-orcasound-net
