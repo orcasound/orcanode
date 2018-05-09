@@ -1,7 +1,7 @@
 version: "3"
 services:
   streaming:
-    image: orcasound/orcanode
+    image: orcasound/orcanode:amd64
     build: ./
     command: ./stream.sh
     restart: always
