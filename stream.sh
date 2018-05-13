@@ -57,7 +57,7 @@ elif [ $NODE_TYPE = "debug" ]; then
 elif [ $NODE_TYPE = "hls-only" ]; then
   	SAMPLE_RATE=48000
   	STREAM_RATE=48000
-	echo "Sampling $CHANNELS channels from $AUDIO_HW_ID at $SAMPLE_RATE Hz with bitrate of 32 bits/sample..."
+	echo "Sampling $CHANNELS channels from $AUDIO_HW_ID at $SAMPLE_RATE Hz..."
   	echo "Asking ffmpeg to stream only HLS segments at $STREAM_RATE Hz......" 
   	## Streaming HLS only via mpegts
 	ffmpeg -f alsa -ac $CHANNELS -ar $SAMPLE_RATE -i hw:$AUDIO_HW_ID -ac $CHANNELS -f segment -segment_list "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac 2 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" &
@@ -81,6 +81,6 @@ fi
 while true; do
   inotifywait -r -e close_write,create /tmp/$NODE_NAME /tmp/flac/$NODE_NAME
   echo "Running rsync on $NODE_NAME..."
-  rsync -rtv /tmp/flac/$NODE_NAME /mnt/dev-archive-orcasound-net
-  rsync -rtv /tmp/$NODE_NAME /mnt/dev-streaming-orcasound-net
+  rsync -rtvW --size-only /tmp/flac/$NODE_NAME /mnt/dev-archive-orcasound-net
+  rsync -rtvW --size-only /tmp/$NODE_NAME /mnt/dev-streaming-orcasound-net
 done
