@@ -48,7 +48,7 @@ SYSLOG_STRUCTURED_DATA='logdna@YourLogDNAnumber key="YourLogDNAKey" tag="docker"
 
 ## Running local tests
 
-In the repository directory (where you also put your .env file) run `docker-compose up -d`. Watch what happens using `htop`. If you want to verify files are being written to /tmp or /mnt directories, get the name of your streaming service using `docker-compose ps` (in this case `orcanode_streaming_1) and then do `docker exec -it orcanode_streaming_1 /bin/bash` to get a bash shell within the running container.
+In the repository directory (where you also put your .env file) run `docker-compose up -d`. Watch what happens using `htop`. If you want to verify files are being written to /tmp or /mnt directories, get the name of your streaming service using `docker-compose ps` (in this case `orcanode_streaming_1`) and then do `docker exec -it orcanode_streaming_1 /bin/bash` to get a bash shell within the running container.
 
 ### Running an end-to-end test
 
