@@ -1,12 +1,4 @@
-# orcanode
-
-What the project does
-Why the project is useful
-How users can get started with the project
-Where users can get help with your project
-Who maintains and contributes to the project
-
-# Orcasound orcanode
+# Orcasound's orcanode
 
 This software captures local audio data and streams it to AWS S3 buckets -- both as lossy (AAC-encoded) data in HLS segments for live-listening and as a lossless (FLAC-encoded) for archiving and/or acoustic analysis. There are branches for both arm32v7 and amd64 architectures, though the majority of initial development has been on the ARM-based Raspberry Pi3b.
 
