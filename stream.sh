@@ -1,17 +1,6 @@
 #!/bin/bash
 # Script for live DASH/HLS streaming lossy audio as AAC and/or archiving lossless audio as FLAC  
 
-
-#### Set up and mount s3fs bucket
-
-# Set up general output s3fs dirs locally
-mkdir -p /mnt/dev-archive-orcasound-net
-mkdir -p /mnt/dev-streaming-orcasound-net
-
-# Start s3fs (with debug flags)
-s3fs -o default_acl=public-read --debug -o dbglevel=info dev-archive-orcasound-net /mnt/dev-archive-orcasound-net/
-s3fs -o default_acl=public-read --debug -o dbglevel=info dev-streaming-orcasound-net /mnt/dev-streaming-orcasound-net/
-
 # Get current timestamp
 timestamp=$(date +%s)
 
@@ -78,9 +67,7 @@ else
 fi
 
 
-while true; do
-  inotifywait -r -e close_write,create /tmp/$NODE_NAME /tmp/flac/$NODE_NAME
-  echo "Running rsync on $NODE_NAME..."
-  nice -n -5 rsync -rtv /tmp/flac/$NODE_NAME /mnt/dev-archive-orcasound-net
-  nice -n -5 rsync -rtv /tmp/$NODE_NAME /mnt/dev-streaming-orcasound-net
-done
+#
+#  Need to pass in timestamp
+#
+python3 uploads3.py $timestamp

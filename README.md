@@ -25,8 +25,8 @@ An ARM or X86 device with a sound card (or other audio input device) connected t
 Choose the branch that is appropriate for your architecture. Clone that branch and create an .env file that contains the following:
 
 ```
-AWSACCESSKEYID=YourAWSaccessKey
-AWSSECRETACCESSKEY=YourAWSsecretAccessKey
+AWS_ACCESS_KEY_ID=YourAWSaccessKey
+AWS_SECRET_ACCESS_KEY=YourAWSsecretAccessKey
 
 NODE_NAME=YourNodeName
 NODE_TYPE=hls-only

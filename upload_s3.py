@@ -15,7 +15,6 @@
 #
 #
 
-
 from threading import Thread
 from boto3.s3.transfer import S3Transfer
 import inotify.adapters
@@ -27,12 +26,15 @@ import sys
 
 NODE = os.environ["NODE_NAME"]
 # Paths to watch is /tmp/NODE_NAME an /tmp/flac/NODE_NAME
-PATH =
+PATH = 
+
+# "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts"
+# "/tmp/flac/$NODE_NAME"
 # s3.Bucket(name='dev-archive-orcasound-net')  // flac
 # s3.Bucket(name='dev-streaming-orcasound-net') // hls 
 
 BUCKET = 'dev-streaming-orcasound-net'
-REGION = 'ap-southeast-2'
+REGION = 'us-west-2'
 LOGLEVEL = logging.DEBUG
 
 # def _main():
@@ -66,21 +68,28 @@ def s3_copy_file(filename):
     try:
         client = boto3.client('s3', REGION)   # Doesn't seem like we have to specify region
         transfer = S3Transfer(client)
-        transfer.upload_file(PATH+'/'+filename, BUCKET, filename)
-        os.remove(PATH+'/'+filename)
+        transfer.upload_file(PATH+'/'+filename, BUCKET, filename)  # TODO have to build filename into correct key.
+    #    os.remove(PATH+'/'+filename)  maybe not necessary since we write to /tmp and reboot every so often
     except:
         e = sys.exc_info()[0]
         log.critical('error uploading to S3: '+str(e))
 
 def do_something():
     i = inotify.adapters.Inotify()
-    i.add_watch(str.encode(PATH))
+    i.add_watch(str.encode(PATH))  #TODO we want recursive watch i = inotify.adapters.InotifyTree('/tmp/rpi_steve_test')???
+    # TODO we should ideally block block_duration_s on the watch about the rate at which we write files, maybe slightly less
     try:
-        for event in i.event_gen():
+        for event in i.event_gen():   # for event in i.event_gen(yield_nones=False):
             if event is not None:
                 (header, type_names, watch_path, filename) = event
                 if type_names[0] == 'IN_CLOSE_WRITE':
                     log.debug('Recieved a new file '+bytes.decode(filename))
+                    #
+                    # todo get rid of threads
+                    # todo pass both filename (for orignal path + file name to read
+                    # plus the s3 key combination create from "watch_path" with /tmp removed from front
+                    #
+                    
                     z = Thread(target=s3_copy_file, args=(bytes.decode(filename),))
                     z.start()
     finally:

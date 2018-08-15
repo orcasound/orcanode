@@ -65,9 +65,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tmux \
     wget
 
-############################### Install s3fs ###################################
+############################### Install boto and inotify libraies  ###################################
 
-RUN apt-get update && apt-get install -y --no-install-recommends s3fs
+RUN pip3 install -U boto3
+RUN pip3 install inotify
 
 ############################### Copy files #####################################
 
