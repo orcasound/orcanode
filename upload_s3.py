@@ -15,7 +15,6 @@
 #
 #
 
-from threading import Thread
 from boto3.s3.transfer import S3Transfer
 import inotify.adapters
 import logging
@@ -25,9 +24,9 @@ import os
 import sys
 
 NODE = os.environ["NODE_NAME"]
+BASEPATH = "/tmp"
+PATH = os.path.join(BASEPATH, NODE)
 # Paths to watch is /tmp/NODE_NAME an /tmp/flac/NODE_NAME
-PATH = 
-
 # "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts"
 # "/tmp/flac/$NODE_NAME"
 # s3.Bucket(name='dev-archive-orcasound-net')  // flac
@@ -37,68 +36,46 @@ BUCKET = 'dev-streaming-orcasound-net'
 REGION = 'us-west-2'
 LOGLEVEL = logging.DEBUG
 
-# def _main():
-#     #i = inotify.adapters.Inotify()
-
-#     #i.add_watch('/tmp')
-#     i = inotify.adapters.InotifyTree('/tmp/rpi_steve_test')
-
-#     #with open('/tmp/test_file', 'w'):
-#     #    pass
-
-#     for event in i.event_gen(yield_nones=False):
-#         (_, type_names, path, filename) = event
-
-#         print("PATH=[{}] FILENAME=[{}] EVENT_TYPES={}".format(
-#               path, filename, type_names))
-
 log = logging.getLogger(__name__)
 
 log.setLevel(LOGLEVEL)
 
-handler = logging.handlers.SysLogHandler(address = '/dev/log')
+handler = logging.StreamHandler(sys.stdout)
 
 formatter = logging.Formatter('%(module)s.%(funcName)s: %(message)s')
 handler.setFormatter(formatter)
 
 log.addHandler(handler)
 
-def s3_copy_file(filename):
-    log.debug('uploading file '+filename+' from '+PATH+' to bucket '+BUCKET)
+def s3_copy_file(path, filename):
+    log.debug('uploading file '+filename+' from '+path+' to bucket '+BUCKET)
     try:
         client = boto3.client('s3', REGION)   # Doesn't seem like we have to specify region
         transfer = S3Transfer(client)
-        transfer.upload_file(PATH+'/'+filename, BUCKET, filename)  # TODO have to build filename into correct key.
-    #    os.remove(PATH+'/'+filename)  maybe not necessary since we write to /tmp and reboot every so often
+        uploadfile = os.path.join(path, filename)
+        log.debug('upload file: ' + uploadfile)
+        uploadpath = os.path.relpath(path, BASEPATH)
+        uploadkey = os.path.join(uploadpath, filename)
+        log.debug('upload key: ' + uploadkey)
+        transfer.upload_file(uploadfile, BUCKET, uploadkey)  # TODO have to build filename into correct key.
+    #    os.remove(path+'/'+filename)  maybe not necessary since we write to /tmp and reboot every so often
     except:
         e = sys.exc_info()[0]
         log.critical('error uploading to S3: '+str(e))
 
-def do_something():
-    i = inotify.adapters.Inotify()
-    i.add_watch(str.encode(PATH))  #TODO we want recursive watch i = inotify.adapters.InotifyTree('/tmp/rpi_steve_test')???
+def _main():
+    i = inotify.adapters.InotifyTree(PATH)
     # TODO we should ideally block block_duration_s on the watch about the rate at which we write files, maybe slightly less
     try:
-        for event in i.event_gen():   # for event in i.event_gen(yield_nones=False):
-            if event is not None:
-                (header, type_names, watch_path, filename) = event
-                if type_names[0] == 'IN_CLOSE_WRITE':
-                    log.debug('Recieved a new file '+bytes.decode(filename))
-                    #
-                    # todo get rid of threads
-                    # todo pass both filename (for orignal path + file name to read
-                    # plus the s3 key combination create from "watch_path" with /tmp removed from front
-                    #
-                    
-                    z = Thread(target=s3_copy_file, args=(bytes.decode(filename),))
-                    z.start()
+        for event in i.event_gen(yield_nones=False):
+            (header, type_names, path, filename) = event
+            if type_names[0] == 'IN_CLOSE_WRITE':
+                log.debug('Recieved a new file ' + filename)
+                s3_copy_file(path, filename)
     finally:
-        i.remove_watch(str.encode(PATH))
+        log.debug('all done')
 
         
 if __name__ == '__main__':
     _main()
-#    pid=PID
-#    daemon = Daemonize(app="s3autoloader", pid=pid, action=do_something)
-#    daemon.start()
 
