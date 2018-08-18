@@ -66,8 +66,8 @@ If you would like to add a node to the Orcasound hydrophone network, deployment 
 ## Built With
 
 * [FFmpeg](https://www.ffmpeg.org/) - Uses ALSA to acquire audio data, then generates lossy streams and/or lossless archive files
-* [rsync](https://rsync.samba.org/) - Transfers files locally from /tmp to /mnt directories
-* [s3fs](https://github.com/s3fs-fuse/s3fs-fuse) - Used to transfer audio data from local device to S3 bucket(s)
+* [pynotify](https://github.com/dsoprea/PyInotify) - Python inotify functionality, to watch for files to upload
+* [boto3](https://github.com/boto/boto3) - Used to transfer audio data from local device to S3 bucket(s)
 
 ## Contributing
 
