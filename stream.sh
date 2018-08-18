@@ -67,7 +67,5 @@ else
 fi
 
 
-#
-#  Need to pass in timestamp
-#
-python3 uploads3.py $timestamp
+
+python3 upload_s3.py
