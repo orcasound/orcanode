@@ -70,8 +70,12 @@ def _main():
         for event in i.event_gen(yield_nones=False):
             (header, type_names, path, filename) = event
             if type_names[0] == 'IN_CLOSE_WRITE':
-                log.debug('Recieved a new file ' + filename)
-                s3_copy_file(path, filename)
+                if 'tmp' not in filename:
+                    log.debug('Recieved a new file ' + filename)
+                    s3_copy_file(path, filename)
+            if type_names[0] == 'IN_MOVED_TO':
+                    log.debug('Recieved a new file ' + filename)
+                    s3_copy_file(path, filename)
     finally:
         log.debug('all done')
 
