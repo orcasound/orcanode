@@ -67,6 +67,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 ############################### Install boto and inotify libraies  ###################################
 
+RUN apt-get update && apt-get install -y python3-pip
 RUN pip3 install -U boto3
 RUN pip3 install inotify
 
