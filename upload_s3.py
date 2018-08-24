@@ -50,15 +50,16 @@ log.addHandler(handler)
 def s3_copy_file(path, filename):
     log.debug('uploading file '+filename+' from '+path+' to bucket '+BUCKET)
     try:
-        client = boto3.client('s3', REGION)   # Doesn't seem like we have to specify region
-        transfer = S3Transfer(client)
+        resource = boto3.resource('s3', REGION)   # Doesn't seem like we have to specify region
+        # transfer = S3Transfer(client)
         uploadfile = os.path.join(path, filename)
         log.debug('upload file: ' + uploadfile)
         uploadpath = os.path.relpath(path, BASEPATH)
-        uploadkey = os.path.join(uploadpath, filename)
+        uploadkey = os.path.join(uploadpath, filename, )
         log.debug('upload key: ' + uploadkey)
-        transfer.upload_file(uploadfile, BUCKET, uploadkey)  # TODO have to build filename into correct key.
-    #    os.remove(path+'/'+filename)  maybe not necessary since we write to /tmp and reboot every so often
+        resource.meta.client.upload_file(uploadfile, BUCKET, uploadkey,
+                                         ExtraArgs={'ACL': 'public-read'})  # TODO have to build filename into correct key.
+        os.remove(path+'/'+filename)  maybe not necessary since we write to /tmp and reboot every so often
     except:
         e = sys.exc_info()[0]
         log.critical('error uploading to S3: '+str(e))
