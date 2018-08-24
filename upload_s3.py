@@ -64,6 +64,7 @@ def s3_copy_file(path, filename):
         log.critical('error uploading to S3: '+str(e))
 
 def _main():
+    s3_copy_file(PATH, 'latest.txt')
     i = inotify.adapters.InotifyTree(PATH)
     # TODO we should ideally block block_duration_s on the watch about the rate at which we write files, maybe slightly less
     try:
