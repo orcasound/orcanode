@@ -24,8 +24,8 @@ import os
 import sys
 
 NODE = os.environ["NODE_NAME"]
-BASEPATH = "/tmp"
-PATH = os.path.join(BASEPATH, NODE)
+BASEPATH = os.path.join("/tmp", NODE)
+PATH = os.path.join(BASEPATH, "hls")
 # Paths to watch is /tmp/NODE_NAME an /tmp/flac/NODE_NAME
 # "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts"
 # "/tmp/flac/$NODE_NAME"
@@ -54,18 +54,18 @@ def s3_copy_file(path, filename):
         # transfer = S3Transfer(client)
         uploadfile = os.path.join(path, filename)
         log.debug('upload file: ' + uploadfile)
-        uploadpath = os.path.relpath(path, BASEPATH)
+        uploadpath = os.path.relpath(path, "/tmp")
         uploadkey = os.path.join(uploadpath, filename, )
         log.debug('upload key: ' + uploadkey)
         resource.meta.client.upload_file(uploadfile, BUCKET, uploadkey,
                                          ExtraArgs={'ACL': 'public-read'})  # TODO have to build filename into correct key.
-        os.remove(path+'/'+filename)  maybe not necessary since we write to /tmp and reboot every so often
+        os.remove(path+'/'+filename)  # maybe not necessary since we write to /tmp and reboot every so often
     except:
         e = sys.exc_info()[0]
         log.critical('error uploading to S3: '+str(e))
 
 def _main():
-    s3_copy_file(PATH, 'latest.txt')
+    s3_copy_file(BASEPATH, 'latest.txt')
     i = inotify.adapters.InotifyTree(PATH)
     # TODO we should ideally block block_duration_s on the watch about the rate at which we write files, maybe slightly less
     try:
