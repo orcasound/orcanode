@@ -1,7 +1,9 @@
 #!/bin/bash
 # Script for live DASH/HLS streaming lossy audio as AAC and/or archiving lossless audio as FLAC  
-# Environmental variables set by local .env file
+# Some environmental variables set by local .env file; others here:
 
+FLAC_DURATION=10
+SEGMENT_DURATION=10
 
 #### Set up and mount s3fs bucket
 
