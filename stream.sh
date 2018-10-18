@@ -117,7 +117,7 @@ fi
 
 
 while true; do
-  inotifywait -r -e close_write,create,moved_to /tmp/$NODE_NAME /tmp/flac/$NODE_NAME
+  inotifywait -r -e close_write /tmp/$NODE_NAME /tmp/flac/$NODE_NAME
   echo "Running rsync on $NODE_NAME..."
   if [ $NODE_TYPE = "dev-stable" ] || [ $NODE_TYPE = "dev-virt-s3" ] ; then
     nice -n -5 rsync -rtv /tmp/flac/$NODE_NAME /mnt/dev-archive-orcasound-net
