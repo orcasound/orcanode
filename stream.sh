@@ -4,6 +4,9 @@
 
 FLAC_DURATION=10
 SEGMENT_DURATION=10
+LAG_SEGMENTS=6
+LAG=$(( LAG_SEGMENTS*SEGMENT_DURATION ))
+CHOP_M3U8_LINES=$(( LAG_SEGMENTS*(-2) ))
 
 #### Set up and mount s3fs bucket
 
@@ -25,6 +28,8 @@ timestamp=$(date +%s)
 #### Set up local output directories
 mkdir -p /tmp/flac/
 mkdir -p /tmp/flac/$NODE_NAME
+mkdir -p /tmp/m3u8tmp
+mkdir -p /tmp/m3u8tmp/$timestamp
 mkdir -p /tmp/$NODE_NAME/hls
 mkdir -p /tmp/$NODE_NAME/hls/$timestamp
 #mkdir -p /tmp/$NODE_NAME/dash
@@ -93,7 +98,7 @@ elif [ $NODE_TYPE = "dev-stable" ]; then
 	echo "Sampling $CHANNELS channels from $AUDIO_HW_ID at $SAMPLE_RATE Hz..."
 	echo "Asking ffmpeg to write $FLAC_DURATION second $SAMPLE_RATE Hz FLAC files..." 
 	## Streaming HLS with FLAC archive 
-	nice -n -10 ffmpeg -f alsa -ac $CHANNELS -ar $SAMPLE_RATE -i hw:$AUDIO_HW_ID -ac $CHANNELS -ar $SAMPLE_RATE -sample_fmt s32 -acodec flac -f segment -segment_time "00:00:$FLAC_DURATION.00" -strftime 1 "/tmp/flac/$NODE_NAME/%Y-%m-%d_%H-%M-%S_$NODE_NAME-$SAMPLE_RATE-$CHANNELS.flac" -f segment -segment_list "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac 2 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" &
+	nice -n -10 ffmpeg -f alsa -ac $CHANNELS -ar $SAMPLE_RATE -i hw:$AUDIO_HW_ID -ac $CHANNELS -ar $SAMPLE_RATE -sample_fmt s32 -acodec flac -f segment -segment_time "00:00:$FLAC_DURATION.00" -strftime 1 "/tmp/flac/$NODE_NAME/%Y-%m-%d_%H-%M-%S_$NODE_NAME-$SAMPLE_RATE-$CHANNELS.flac" -f segment -segment_list "/tmp/m3u8tmp/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac 2 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" &
 
 ## Default NODE_TYPE settings
 else
@@ -112,10 +117,12 @@ else
 	nice -n -7 ./test-engine-live-tools/bin/live-stream -c ./config_audio.json udp://127.0.0.1:1234 &
 fi
 
+sleep $LAG
 
 while true; do
   inotifywait -r -e close_write /tmp/$NODE_NAME /tmp/flac/$NODE_NAME
-  echo "Running rsync on $NODE_NAME..."
+  echo "Running rsync on $NODE_NAME with lag of $LAG_SEGMENTS segments, or $LAG seconds..."
+  head -n $CHOP_M3U8_LINES /tmp/m3u8tmp/$timestamp/live.m3u8 > /tmp/$NODE_NAME/hls/$timestamp/live.m3u8
   if [ $NODE_TYPE = "dev-stable" ] || [ $NODE_TYPE = "dev-virt-s3" ] ; then
     nice -n -5 rsync -rtv /tmp/flac/$NODE_NAME /mnt/dev-archive-orcasound-net
     nice -n -5 rsync -rtv --exclude='*.tmp' /tmp/$NODE_NAME /mnt/dev-streaming-orcasound-net
