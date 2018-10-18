@@ -118,10 +118,10 @@ while true; do
   echo "Running rsync on $NODE_NAME..."
   if [ $NODE_TYPE = "dev-stable" ] || [ $NODE_TYPE = "dev-virt-s3" ] ; then
     nice -n -5 rsync -rtv /tmp/flac/$NODE_NAME /mnt/dev-archive-orcasound-net
-    nice -n -5 rsync -rtv /tmp/$NODE_NAME /mnt/dev-streaming-orcasound-net
+    nice -n -5 rsync -rtv --exclude='*.tmp' /tmp/$NODE_NAME /mnt/dev-streaming-orcasound-net
   else
     nice -n -5 rsync -rtv /tmp/flac/$NODE_NAME /mnt/archive-orcasound-net
-    nice -n -5 rsync -rtv /tmp/$NODE_NAME /mnt/streaming-orcasound-net
+    nice -n -5 rsync -rtv --exclude='*.tmp' /tmp/$NODE_NAME /mnt/streaming-orcasound-net
 fi
     
 done
