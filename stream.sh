@@ -124,11 +124,11 @@ while true; do
   echo "Running rsync on $NODE_NAME with lag of $LAG_SEGMENTS segments, or $LAG seconds..."
   head -n $CHOP_M3U8_LINES /tmp/m3u8tmp/$timestamp/live.m3u8 > /tmp/$NODE_NAME/hls/$timestamp/live.m3u8
   if [ $NODE_TYPE = "dev-stable" ] || [ $NODE_TYPE = "dev-virt-s3" ] ; then
-    nice -n -5 rsync -rtv /tmp/flac/$NODE_NAME /mnt/dev-archive-orcasound-net
-    nice -n -5 rsync -rtv --exclude='*.tmp' --exclude '.live*' /tmp/$NODE_NAME /mnt/dev-streaming-orcasound-net
+    nice -n -5 rsync -avW --progress --inplace --size-only /tmp/flac/$NODE_NAME /mnt/dev-archive-orcasound-net
+    nice -n -5 rsync -avW --progress --inplace --size-only --exclude='*.tmp' --exclude '.live*' /tmp/$NODE_NAME /mnt/dev-streaming-orcasound-net
   else
-    nice -n -5 rsync -rtv /tmp/flac/$NODE_NAME /mnt/archive-orcasound-net
-    nice -n -5 rsync -rtv --exclude='*.tmp' --exclude '.live*' /tmp/$NODE_NAME /mnt/streaming-orcasound-net
+    nice -n -5 rsync -avW --progress --inplace --size-only /tmp/flac/$NODE_NAME /mnt/archive-orcasound-net
+    nice -n -5 rsync -avW --progress --inplace --size-only --exclude='*.tmp' --exclude '.live*' /tmp/$NODE_NAME /mnt/streaming-orcasound-net
 fi
     
 done
