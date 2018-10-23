@@ -120,7 +120,7 @@ fi
 sleep $LAG
 
 while true; do
-  inotifywait -r -e close_write /tmp/$NODE_NAME /tmp/flac/$NODE_NAME
+  inotifywait -r -e close_write,create,moved_to /tmp/$NODE_NAME /tmp/flac/$NODE_NAME
   echo "Running rsync on $NODE_NAME with lag of $LAG_SEGMENTS segments, or $LAG seconds..."
   head -n $CHOP_M3U8_LINES /tmp/m3u8tmp/$timestamp/live.m3u8 > /tmp/$NODE_NAME/hls/$timestamp/live.m3u8
   if [ $NODE_TYPE = "dev-stable" ] || [ $NODE_TYPE = "dev-virt-s3" ] ; then
