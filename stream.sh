@@ -21,7 +21,6 @@ mkdir -p /mnt/streaming-orcasound-net/$NODE_NAME/hls
 mkdir -p /mnt/streaming-orcasound-net/$NODE_NAME/hls/$timestamp
 
 mkdir -p /mnt/dev-archive-orcasound-net
-mkdir -p /mnt/dev-streaming-orcasound-net/$NODE_NAME
 mkdir -p /mnt/dev-streaming-orcasound-net
 mkdir -p /mnt/dev-streaming-orcasound-net/$NODE_NAME
 mkdir -p /mnt/dev-streaming-orcasound-net/$NODE_NAME/hls
