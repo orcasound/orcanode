@@ -8,29 +8,27 @@ LAG_SEGMENTS=6
 LAG=$(( LAG_SEGMENTS*SEGMENT_DURATION ))
 CHOP_M3U8_LINES=$(( LAG_SEGMENTS*(-2) ))
 
-#### Set up and mount s3fs bucket
-
 # Get current timestamp
 timestamp=$(date +%s)
+
+#### Set up /tmp, /mnt directories and start s3fs
 
 # Set up general output s3fs dirs locally
 mkdir -p /mnt/archive-orcasound-net
 mkdir -p /mnt/streaming-orcasound-net
+s3fs -o default_acl=public-read --debug -o dbglevel=info archive-orcasound-net /mnt/archive-orcasound-net/
+s3fs -o default_acl=public-read --debug -o dbglevel=info streaming-orcasound-net /mnt/streaming-orcasound-net/
 mkdir -p /mnt/streaming-orcasound-net/$NODE_NAME
 mkdir -p /mnt/streaming-orcasound-net/$NODE_NAME/hls
 mkdir -p /mnt/streaming-orcasound-net/$NODE_NAME/hls/$timestamp
 
 mkdir -p /mnt/dev-archive-orcasound-net
 mkdir -p /mnt/dev-streaming-orcasound-net
+s3fs -o default_acl=public-read --debug -o dbglevel=info dev-archive-orcasound-net /mnt/dev-archive-orcasound-net/
+s3fs -o default_acl=public-read --debug -o dbglevel=info dev-streaming-orcasound-net /mnt/dev-streaming-orcasound-net/
 mkdir -p /mnt/dev-streaming-orcasound-net/$NODE_NAME
 mkdir -p /mnt/dev-streaming-orcasound-net/$NODE_NAME/hls
 mkdir -p /mnt/dev-streaming-orcasound-net/$NODE_NAME/hls/$timestamp
-
-# Start s3fs (with debug flags)
-s3fs -o default_acl=public-read --debug -o dbglevel=info archive-orcasound-net /mnt/archive-orcasound-net/
-s3fs -o default_acl=public-read --debug -o dbglevel=info streaming-orcasound-net /mnt/streaming-orcasound-net/
-s3fs -o default_acl=public-read --debug -o dbglevel=info dev-archive-orcasound-net /mnt/dev-archive-orcasound-net/
-s3fs -o default_acl=public-read --debug -o dbglevel=info dev-streaming-orcasound-net /mnt/dev-streaming-orcasound-net/
 
 #### Set up local output directories
 mkdir -p /tmp/flac/
