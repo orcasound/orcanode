@@ -1,4 +1,4 @@
-#/bin/bash
+#!/bin/bash
 # Script for live DASH/HLS streaming lossy audio as AAC and/or archiving lossless audio as FLAC  
 # Some environmental variables set by local .env file; others here:
 
