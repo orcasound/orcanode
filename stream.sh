@@ -2,8 +2,8 @@
 # Script for live DASH/HLS streaming lossy audio as AAC and/or archiving lossless audio as FLAC  
 # Some environmental variables set by local .env file; others here:
 
-FLAC_DURATION=10
 SEGMENT_DURATION=10
+FLAC_DURATION=$( SEGMENT_DURATION )
 LAG_SEGMENTS=6
 LAG=$(( LAG_SEGMENTS*SEGMENT_DURATION ))
 CHOP_M3U8_LINES=$(( LAG_SEGMENTS*(-2) ))
@@ -144,5 +144,5 @@ while true; do
     nice -n -5 rsync -avW --progress --inplace --size-only /tmp/flac/$NODE_NAME /mnt/archive-orcasound-net
     nice -n -5 rsync -avW --progress --inplace --size-only --exclude='*.tmp' --exclude '.live*' /tmp/$NODE_NAME /mnt/streaming-orcasound-net
   fi
-sleep     
+sleep $SEGMENT_DURATION
 done
