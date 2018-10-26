@@ -4,33 +4,12 @@
 
 SEGMENT_DURATION=10
 FLAC_DURATION=10
-LAG_SEGMENTS=3
+LAG_SEGMENTS=6
 LAG=$(( LAG_SEGMENTS*SEGMENT_DURATION ))
 CHOP_M3U8_LINES=$(( LAG_SEGMENTS*(-2) ))
 
 # Get current timestamp
 timestamp=$(date +%s)
-
-#### Set up /tmp, /mnt directories and start s3fs
-
-# Set up general output s3fs dirs locally
-mkdir -p /mnt/archive-orcasound-net
-mkdir -p /mnt/streaming-orcasound-net
-s3fs -o default_acl=public-read --debug -o dbglevel=info archive-orcasound-net /mnt/archive-orcasound-net/
-s3fs -o default_acl=public-read --debug -o dbglevel=info streaming-orcasound-net /mnt/streaming-orcasound-net/
-mkdir -p /mnt/archive-orcasound-net/$NODE_NAME
-mkdir -p /mnt/streaming-orcasound-net/$NODE_NAME
-mkdir -p /mnt/streaming-orcasound-net/$NODE_NAME/hls
-mkdir -p /mnt/streaming-orcasound-net/$NODE_NAME/hls/$timestamp
-
-mkdir -p /mnt/dev-archive-orcasound-net
-mkdir -p /mnt/dev-streaming-orcasound-net
-s3fs -o default_acl=public-read --debug -o dbglevel=info dev-archive-orcasound-net /mnt/dev-archive-orcasound-net/
-s3fs -o default_acl=public-read --debug -o dbglevel=info dev-streaming-orcasound-net /mnt/dev-streaming-orcasound-net/
-mkdir -p /mnt/dev-archive-orcasound-net/$NODE_NAME
-mkdir -p /mnt/dev-streaming-orcasound-net/$NODE_NAME
-mkdir -p /mnt/dev-streaming-orcasound-net/$NODE_NAME/hls
-mkdir -p /mnt/dev-streaming-orcasound-net/$NODE_NAME/hls/$timestamp
 
 #### Set up local output directories
 ##mkdir -p /tmp/flac/
@@ -46,6 +25,33 @@ mkdir -p /tmp/$NODE_NAME/hls/$timestamp
 
 # Output timestamp for this (latest) stream
 echo $timestamp > /tmp/$NODE_NAME/latest.txt
+
+
+#### Set up /tmp, /mnt directories and start s3fs, with architecture depending on the node-type
+
+    ## Could move the latest copy up to where subdirs are made, and also add dev vs other logic there...
+
+  if [ $NODE_TYPE = "dev-stable" ] || [ $NODE_TYPE = "dev-virt-s3" ] ; then
+	mkdir -p /mnt/dev-archive-orcasound-net
+	mkdir -p /mnt/dev-streaming-orcasound-net
+	s3fs -o default_acl=public-read --debug -o dbglevel=info dev-archive-orcasound-net /mnt/dev-archive-orcasound-net/
+	s3fs -o default_acl=public-read --debug -o dbglevel=info dev-streaming-orcasound-net /mnt/dev-streaming-orcasound-net/
+	mkdir -p /mnt/dev-archive-orcasound-net/$NODE_NAME
+	mkdir -p /mnt/dev-streaming-orcasound-net/$NODE_NAME
+	mkdir -p /mnt/dev-streaming-orcasound-net/$NODE_NAME/hls
+	mkdir -p /mnt/dev-streaming-orcasound-net/$NODE_NAME/hls/$timestamp
+        cp /tmp/$NODE_NAME/latest.txt /mnt/dev-streaming-orcasound-net/$NODE_NAME/latest.txt
+  else
+	mkdir -p /mnt/archive-orcasound-net
+	mkdir -p /mnt/streaming-orcasound-net
+	s3fs -o default_acl=public-read --debug -o dbglevel=info archive-orcasound-net /mnt/archive-orcasound-net/
+	s3fs -o default_acl=public-read --debug -o dbglevel=info streaming-orcasound-net /mnt/streaming-orcasound-net/
+	mkdir -p /mnt/archive-orcasound-net/$NODE_NAME
+	mkdir -p /mnt/streaming-orcasound-net/$NODE_NAME
+	mkdir -p /mnt/streaming-orcasound-net/$NODE_NAME/hls
+	mkdir -p /mnt/streaming-orcasound-net/$NODE_NAME/hls/$timestamp
+        cp /tmp/$NODE_NAME/latest.txt /mnt/streaming-orcasound-net/$NODE_NAME/latest.txt
+  fi
 
 
 #### Generate stream segments and manifests, and/or lossless archive
@@ -108,10 +114,10 @@ elif [ $NODE_TYPE = "dev-stable" ]; then
 	SAMPLE_RATE=48000
 	STREAM_RATE=48000 
 	echo "Sampling $CHANNELS channels from $AUDIO_HW_ID at $SAMPLE_RATE Hz..."
-	echo "Asking ffmpeg to write $FLAC_DURATION second $SAMPLE_RATE Hz FLAC files..." 
 	## Streaming HLS only to /tmp directories 
         nice -n -10 ffmpeg -f alsa -ac $CHANNELS -ar $SAMPLE_RATE -thread_queue_size 1024 -i hw:$AUDIO_HW_ID -f segment -segment_list "/tmp/m3u8tmp/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac 2 -threads 3 -acodec aac "/mnt/dev-streaming-orcasound-net/$NODE_NAME/hls/$timestamp/live%03d.ts" &
 	## Streaming HLS with FLAC archive direct to /mnt directories
+	## echo "Asking ffmpeg to write $FLAC_DURATION second $SAMPLE_RATE Hz FLAC files..." 
 	## nice -n -10 ffmpeg -f alsa -ac $CHANNELS -ar $SAMPLE_RATE -thread_queue_size 1024 -i hw:$AUDIO_HW_ID -ac $CHANNELS -ar $SAMPLE_RATE -sample_fmt s32 -acodec flac -f segment -segment_time "00:00:$FLAC_DURATION.00" -strftime 1 "/mnt/dev-archive-orcasound-net/$NODE_NAME/%Y-%m-%d_%H-%M-%S_$NODE_NAME-$SAMPLE_RATE-$CHANNELS.flac" -f segment -segment_list "/tmp/m3u8tmp/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac 2 -acodec aac "/mnt/dev-streaming-orcasound-net/$NODE_NAME/hls/$timestamp/live%03d.ts" &
 
 ## Default NODE_TYPE settings
@@ -140,14 +146,11 @@ while true; do
   echo "In while loop copying aged m3u8 for $NODE_NAME with lag of $LAG_SEGMENTS segments, or $LAG seconds..."
   head -n $CHOP_M3U8_LINES /tmp/m3u8tmp/$timestamp/live.m3u8 > /tmp/$NODE_NAME/hls/$timestamp/live.m3u8
   if [ $NODE_TYPE = "dev-stable" ] || [ $NODE_TYPE = "dev-virt-s3" ] ; then
-    ## Could move the latest copy up to where subdirs are made, and also add dev vs other logic there...
-    cp /tmp/$NODE_NAME/latest.txt /mnt/dev-streaming-orcasound-net/$NODE_NAME/latest.txt
     cp /tmp/$NODE_NAME/hls/$timestamp/live.m3u8 /mnt/dev-streaming-orcasound-net/$NODE_NAME/hls/$timestamp/live.m3u8
     ##mv /tmp/$NODE_NAME/hls/$timestamp/live*.ts /mnt/dev-streaming-orcasound-net/$NODE_NAME/hls/$timestamp
     ##nice -n -5 rsync -avW --progress --inplace --size-only /tmp/flac/$NODE_NAME /mnt/dev-archive-orcasound-net
     ##nice -n -5 rsync -avW --progress --inplace --size-only --exclude='*.tmp' --exclude '.live*' /tmp/$NODE_NAME /mnt/dev-streaming-orcasound-net
   else
-    cp /tmp/$NODE_NAME/latest.txt /mnt/streaming-orcasound-net/$NODE_NAME/latest.txt
     cp /tmp/$NODE_NAME/hls/$timestamp/live.m3u8 /mnt/streaming-orcasound-net/$NODE_NAME/hls/$timestamp/live.m3u8
     ##nice -n -5 rsync -avW --progress --inplace --size-only /tmp/flac/$NODE_NAME /mnt/archive-orcasound-net
     ##nice -n -5 rsync -avW --progress --inplace --size-only --exclude='*.tmp' --exclude '.live*' /tmp/$NODE_NAME /mnt/streaming-orcasound-net
