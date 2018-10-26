@@ -107,7 +107,7 @@ elif [ $NODE_TYPE = "dev-stable" ]; then
 	echo "Sampling $CHANNELS channels from $AUDIO_HW_ID at $SAMPLE_RATE Hz..."
 	echo "Asking ffmpeg to write $FLAC_DURATION second $SAMPLE_RATE Hz FLAC files..." 
 	## Streaming HLS with FLAC archive 
-	nice -n -10 ffmpeg -f alsa -ac $CHANNELS -ar $SAMPLE_RATE -thread_queue_size 1024 -i hw:$AUDIO_HW_ID -ac $CHANNELS -ar $SAMPLE_RATE -sample_fmt s32 -acodec flac -f segment -segment_time "00:00:$FLAC_DURATION.00" -strftime 1 "/tmp/flac/$NODE_NAME/%Y-%m-%d_%H-%M-%S_$NODE_NAME-$SAMPLE_RATE-$CHANNELS.flac" -f segment -segment_list "/tmp/m3u8tmp/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac 2 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" &
+	nice -n -10 ffmpeg -f alsa -ac $CHANNELS -ar $SAMPLE_RATE -thread_queue_size 1024 -i hw:$AUDIO_HW_ID -ac $CHANNELS -ar $SAMPLE_RATE -sample_fmt s32 -acodec flac -f segment -segment_time "00:00:$FLAC_DURATION.00" -strftime 1 "/mnt/dev-archive-orcasound-net/flac/$NODE_NAME/%Y-%m-%d_%H-%M-%S_$NODE_NAME-$SAMPLE_RATE-$CHANNELS.flac" -f segment -segment_list "/tmp/m3u8tmp/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac 2 -acodec aac "/mnt/dev-streaming-orcasound-net/$NODE_NAME/hls/$timestamp/live%03d.ts" &
 
 ## Default NODE_TYPE settings
 else
@@ -129,7 +129,7 @@ fi
 sleep $LAG
 
 while true; do
-  inotifywait -r -e close_write /tmp/$NODE_NAME /tmp/flac/$NODE_NAME
+  ##inotifywait -r -e close_write /tmp/$NODE_NAME /tmp/flac/$NODE_NAME
   echo "Inotify wait triggered; copy $NODE_NAME with lag of $LAG_SEGMENTS segments, or $LAG seconds..."
   head -n $CHOP_M3U8_LINES /tmp/m3u8tmp/$timestamp/live.m3u8 > /tmp/$NODE_NAME/hls/$timestamp/live.m3u8
   if [ $NODE_TYPE = "dev-stable" ] || [ $NODE_TYPE = "dev-virt-s3" ] ; then
@@ -143,6 +143,6 @@ while true; do
     cp /tmp/$NODE_NAME/hls/$timestamp/live.m3u8 /mnt/streaming-orcasound-net/$NODE_NAME/hls/$timestamp/live.m3u8
     nice -n -5 rsync -avW --progress --inplace --size-only /tmp/flac/$NODE_NAME /mnt/archive-orcasound-net
     nice -n -5 rsync -avW --progress --inplace --size-only --exclude='*.tmp' --exclude '.live*' /tmp/$NODE_NAME /mnt/streaming-orcasound-net
-fi
-    
+  fi
+sleep     
 done
