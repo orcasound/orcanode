@@ -130,9 +130,10 @@ sleep $LAG
 
 while true; do
   ##inotifywait -r -e close_write /tmp/$NODE_NAME /tmp/flac/$NODE_NAME
-  echo "Inotify wait triggered; copy $NODE_NAME with lag of $LAG_SEGMENTS segments, or $LAG seconds..."
+  echo "In while loop copying aged m3u8 for $NODE_NAME with lag of $LAG_SEGMENTS segments, or $LAG seconds..."
   head -n $CHOP_M3U8_LINES /tmp/m3u8tmp/$timestamp/live.m3u8 > /tmp/$NODE_NAME/hls/$timestamp/live.m3u8
   if [ $NODE_TYPE = "dev-stable" ] || [ $NODE_TYPE = "dev-virt-s3" ] ; then
+    ## Could move the latest copy up to where subdirs are made, and also add dev vs other logic there...
     cp /tmp/$NODE_NAME/latest.txt /mnt/dev-streaming-orcasound-net/$NODE_NAME/latest.txt
     cp /tmp/$NODE_NAME/hls/$timestamp/live.m3u8 /mnt/dev-streaming-orcasound-net/$NODE_NAME/hls/$timestamp/live.m3u8
     ##mv /tmp/$NODE_NAME/hls/$timestamp/live*.ts /mnt/dev-streaming-orcasound-net/$NODE_NAME/hls/$timestamp
