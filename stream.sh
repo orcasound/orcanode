@@ -39,8 +39,8 @@ mkdir -p /mnt/dev-streaming-orcasound-net/$NODE_NAME/hls/$timestamp
 ##mkdir -p /tmp/flac/$NODE_NAME
 mkdir -p /tmp/m3u8tmp
 mkdir -p /tmp/m3u8tmp/$timestamp
-##mkdir -p /tmp/$NODE_NAME/hls
-##mkdir -p /tmp/$NODE_NAME/hls/$timestamp
+mkdir -p /tmp/$NODE_NAME/hls
+mkdir -p /tmp/$NODE_NAME/hls/$timestamp
 #mkdir -p /tmp/$NODE_NAME/dash
 #mkdir -p /tmp/$NODE_NAME/dash/$timestamp
 #ln /tmp/$NODE_NAME/dash/$timestamp /tmp/dash_output_dir
