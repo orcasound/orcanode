@@ -149,8 +149,8 @@ while true; do
   else
     cp /tmp/$NODE_NAME/latest.txt /mnt/streaming-orcasound-net/$NODE_NAME/latest.txt
     cp /tmp/$NODE_NAME/hls/$timestamp/live.m3u8 /mnt/streaming-orcasound-net/$NODE_NAME/hls/$timestamp/live.m3u8
-    nice -n -5 rsync -avW --progress --inplace --size-only /tmp/flac/$NODE_NAME /mnt/archive-orcasound-net
-    nice -n -5 rsync -avW --progress --inplace --size-only --exclude='*.tmp' --exclude '.live*' /tmp/$NODE_NAME /mnt/streaming-orcasound-net
+    ##nice -n -5 rsync -avW --progress --inplace --size-only /tmp/flac/$NODE_NAME /mnt/archive-orcasound-net
+    ##nice -n -5 rsync -avW --progress --inplace --size-only --exclude='*.tmp' --exclude '.live*' /tmp/$NODE_NAME /mnt/streaming-orcasound-net
   fi
 sleep $SEGMENT_DURATION
 done
