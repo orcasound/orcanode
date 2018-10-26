@@ -3,7 +3,7 @@
 # Some environmental variables set by local .env file; others here:
 
 SEGMENT_DURATION=10
-FLAC_DURATION=$( SEGMENT_DURATION )
+FLAC_DURATION=10
 LAG_SEGMENTS=6
 LAG=$(( LAG_SEGMENTS*SEGMENT_DURATION ))
 CHOP_M3U8_LINES=$(( LAG_SEGMENTS*(-2) ))
