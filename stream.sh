@@ -4,7 +4,7 @@
 
 SEGMENT_DURATION=10
 FLAC_DURATION=10
-LAG_SEGMENTS=6
+LAG_SEGMENTS=3
 LAG=$(( LAG_SEGMENTS*SEGMENT_DURATION ))
 CHOP_M3U8_LINES=$(( LAG_SEGMENTS*(-2) ))
 
@@ -65,11 +65,13 @@ if [ $NODE_TYPE = "research" ]; then
 	STREAM_RATE=48000 ## Is it efficient to specify this so mpegts isn't hit by 4x the uncompressed data?
 	echo "Sampling $CHANNELS channels from $AUDIO_HW_ID at $SAMPLE_RATE Hz with bitrate of 32 bits/sample..."
 	echo "Asking ffmpeg to write $FLAC_DURATION second $SAMPLE_RATE Hz FLAC files..." 
-	## Streaming HLS with FLAC archive 
-	nice -n -10 ffmpeg -f alsa -ac $CHANNELS -ar $SAMPLE_RATE -thread_queue_size 1024 -i hw:$AUDIO_HW_ID -ac $CHANNELS -ar $SAMPLE_RATE -sample_fmt s32 -acodec flac \
+	## Streaming HLS with FLAC archive via /tmp (and rsync)
+	##nice -n -10 ffmpeg -f alsa -ac $CHANNELS -ar $SAMPLE_RATE -thread_queue_size 1024 -i hw:$AUDIO_HW_ID -ac $CHANNELS -ar $SAMPLE_RATE -sample_fmt s32 -acodec flac \
        -f segment -segment_time "00:00:$FLAC_DURATION.00" -strftime 1 "/tmp/flac/$NODE_NAME/%Y-%m-%d_%H-%M-%S_$NODE_NAME-$SAMPLE_RATE-$CHANNELS.flac" \
        -f segment -segment_list "/tmp/m3u8tmp/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format \
        mpegts -ar $STREAM_RATE -ac 2 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" &
+	## Streaming HLS segments and FLAC archive direct to /mnt directories, but live.m3u8 via /tmp
+	nice -n -10 ffmpeg -f alsa -ac $CHANNELS -ar $SAMPLE_RATE -thread_queue_size 1024 -i hw:$AUDIO_HW_ID -ac $CHANNELS -ar $SAMPLE_RATE -sample_fmt s32 -acodec flac -f segment -segment_time "00:00:$FLAC_DURATION.00" -strftime 1 "/mnt/archive-orcasound-net/$NODE_NAME/%Y-%m-%d_%H-%M-%S_$NODE_NAME-$SAMPLE_RATE-$CHANNELS.flac" -f segment -segment_list "/tmp/m3u8tmp/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac 2 -acodec aac "/mnt/streaming-orcasound-net/$NODE_NAME/hls/$timestamp/live%03d.ts" &
 
 elif [ $NODE_TYPE = "dash-only" ]; then
         SAMPLE_RATE=48000
@@ -87,8 +89,10 @@ elif [ $NODE_TYPE = "hls-only" ]; then
   	STREAM_RATE=48000
 	echo "Sampling $CHANNELS channels from $AUDIO_HW_ID at $SAMPLE_RATE Hz..."
   	echo "Asking ffmpeg to stream only HLS segments at $STREAM_RATE Hz......" 
-  	## Streaming HLS only via mpegts
-	nice -n -10 ffmpeg -f alsa -ac $CHANNELS -ar $SAMPLE_RATE -thread_queue_size 1024 -i hw:$AUDIO_HW_ID -ac $CHANNELS -f segment -segment_list "/tmp/m3u8tmp/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac 2 -threads 3 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" &
+  	## Streaming HLS only with .ts segments to /mnt, but live.m3u8 to /tmp 
+        nice -n -10 ffmpeg -f alsa -ac $CHANNELS -ar $SAMPLE_RATE -thread_queue_size 1024 -i hw:$AUDIO_HW_ID -f segment -segment_list "/tmp/m3u8tmp/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac 2 -threads 3 -acodec aac "/mnt/streaming-orcasound-net/$NODE_NAME/hls/$timestamp/live%03d.ts" &
+  	## Streaming HLS only via mpegts (the old way with .ts segments via /tmp dirs)
+	##nice -n -10 ffmpeg -f alsa -ac $CHANNELS -ar $SAMPLE_RATE -thread_queue_size 1024 -i hw:$AUDIO_HW_ID -ac $CHANNELS -f segment -segment_list "/tmp/m3u8tmp/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac 2 -threads 3 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" &
 
 elif [ $NODE_TYPE = "dev-virt-s3" ]; then
     SAMPLE_RATE=48000
@@ -98,7 +102,7 @@ elif [ $NODE_TYPE = "dev-virt-s3" ]; then
     ## Streaming HLS only via mpegts
   nice -n -10 ffmpeg -re -fflags +genpts -stream_loop -1 -i "samples/haro-strait_2005.wav" \
     -f segment -segment_list "/tmp/m3u8tmp/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts \
-    -ar $STREAM_RATE -ac 2 -threads 3 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" &
+    -ar $STREAM_RATE -ac 2 -threads 3 -acodec aac "/mnt/streaming-orcasound-net/$NODE_NAME/hls/$timestamp/live%03d.ts" &
 
 elif [ $NODE_TYPE = "dev-stable" ]; then
 	SAMPLE_RATE=48000
@@ -116,12 +120,14 @@ else
 	STREAM_RATE=48000
 	echo "Sampling $CHANNELS channels from $AUDIO_HW_ID at $SAMPLE_RATE Hz with bitrate of 32 bits/sample..."
 	echo "Asking ffmpeg to write $FLAC_DURATION second $SAMPLE_RATE Hz lo-res flac files while streaming in both DASH and HLS..." 
-	## Streaming DASH/HLS with low-res flac archive 
-	nice -n -10 ffmpeg -f alsa -ac $CHANNELS -ar $SAMPLE_RATE -thread_queue_size 1024 -i hw:$AUDIO_HW_ID -ac $CHANNELS -ar $SAMPLE_RATE -sample_fmt s32 -acodec flac \
+	## Streaming DASH/HLS with low-res flac archive (the old way via tmp directories) 
+	##nice -n -10 ffmpeg -f alsa -ac $CHANNELS -ar $SAMPLE_RATE -thread_queue_size 1024 -i hw:$AUDIO_HW_ID -ac $CHANNELS -ar $SAMPLE_RATE -sample_fmt s32 -acodec flac \
        -f segment -segment_time "00:00:$FLAC_DURATION.00" -strftime 1 "/tmp/flac/$NODE_NAME/%Y-%m-%d_%H-%M-%S_$NODE_NAME-$SAMPLE_RATE-$CHANNELS.flac" \
        -f segment -segment_list "/tmp/m3u8tmp/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format \
        mpegts -ac 2 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" \
        -f mpegts -ac 2 udp://127.0.0.1:1234 &
+	## Streaming HLS segments and FLAC archive direct to /mnt directories, but live.m3u8 via /tmp
+	nice -n -10 ffmpeg -f alsa -ac $CHANNELS -ar $SAMPLE_RATE -thread_queue_size 1024 -i hw:$AUDIO_HW_ID -ac $CHANNELS -ar $SAMPLE_RATE -sample_fmt s32 -acodec flac -f segment -segment_time "00:00:$FLAC_DURATION.00" -strftime 1 "/mnt/archive-orcasound-net/$NODE_NAME/%Y-%m-%d_%H-%M-%S_$NODE_NAME-$SAMPLE_RATE-$CHANNELS.flac" -f segment -segment_list "/tmp/m3u8tmp/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac 2 -acodec aac "/mnt/streaming-orcasound-net/$NODE_NAME/hls/$timestamp/live%03d.ts" &
 	#### Stream with test engine live tools
 	## May need to adjust segment length in config_audio.json to match $SEGMENT_DURATION...
 	nice -n -7 ./test-engine-live-tools/bin/live-stream -c ./config_audio.json udp://127.0.0.1:1234 &
@@ -143,8 +149,8 @@ while true; do
   else
     cp /tmp/$NODE_NAME/latest.txt /mnt/streaming-orcasound-net/$NODE_NAME/latest.txt
     cp /tmp/$NODE_NAME/hls/$timestamp/live.m3u8 /mnt/streaming-orcasound-net/$NODE_NAME/hls/$timestamp/live.m3u8
-    nice -n -5 rsync -avW --progress --inplace --size-only /tmp/flac/$NODE_NAME /mnt/archive-orcasound-net
-    nice -n -5 rsync -avW --progress --inplace --size-only --exclude='*.tmp' --exclude '.live*' /tmp/$NODE_NAME /mnt/streaming-orcasound-net
+    ##nice -n -5 rsync -avW --progress --inplace --size-only /tmp/flac/$NODE_NAME /mnt/archive-orcasound-net
+    ##nice -n -5 rsync -avW --progress --inplace --size-only --exclude='*.tmp' --exclude '.live*' /tmp/$NODE_NAME /mnt/streaming-orcasound-net
   fi
 sleep $SEGMENT_DURATION
 done
