@@ -18,8 +18,7 @@ mkdir -p /mnt/archive-orcasound-net
 mkdir -p /mnt/streaming-orcasound-net
 s3fs -o default_acl=public-read --debug -o dbglevel=info archive-orcasound-net /mnt/archive-orcasound-net/
 s3fs -o default_acl=public-read --debug -o dbglevel=info streaming-orcasound-net /mnt/streaming-orcasound-net/
-mkdir -p /mnt/archive-orcasound-net/flac
-mkdir -p /mnt/archive-orcasound-net/flac/$NODE_NAME
+mkdir -p /mnt/archive-orcasound-net/$NODE_NAME
 mkdir -p /mnt/streaming-orcasound-net/$NODE_NAME
 mkdir -p /mnt/streaming-orcasound-net/$NODE_NAME/hls
 mkdir -p /mnt/streaming-orcasound-net/$NODE_NAME/hls/$timestamp
@@ -28,8 +27,7 @@ mkdir -p /mnt/dev-archive-orcasound-net
 mkdir -p /mnt/dev-streaming-orcasound-net
 s3fs -o default_acl=public-read --debug -o dbglevel=info dev-archive-orcasound-net /mnt/dev-archive-orcasound-net/
 s3fs -o default_acl=public-read --debug -o dbglevel=info dev-streaming-orcasound-net /mnt/dev-streaming-orcasound-net/
-mkdir -p /mnt/dev-archive-orcasound-net/flac
-mkdir -p /mnt/dev-archive-orcasound-net/flac/$NODE_NAME
+mkdir -p /mnt/dev-archive-orcasound-net/$NODE_NAME
 mkdir -p /mnt/dev-streaming-orcasound-net/$NODE_NAME
 mkdir -p /mnt/dev-streaming-orcasound-net/$NODE_NAME/hls
 mkdir -p /mnt/dev-streaming-orcasound-net/$NODE_NAME/hls/$timestamp
@@ -39,6 +37,7 @@ mkdir -p /mnt/dev-streaming-orcasound-net/$NODE_NAME/hls/$timestamp
 ##mkdir -p /tmp/flac/$NODE_NAME
 mkdir -p /tmp/m3u8tmp
 mkdir -p /tmp/m3u8tmp/$timestamp
+mkdir -p /tmp/$NODE_NAME
 mkdir -p /tmp/$NODE_NAME/hls
 mkdir -p /tmp/$NODE_NAME/hls/$timestamp
 #mkdir -p /tmp/$NODE_NAME/dash
@@ -107,7 +106,7 @@ elif [ $NODE_TYPE = "dev-stable" ]; then
 	echo "Sampling $CHANNELS channels from $AUDIO_HW_ID at $SAMPLE_RATE Hz..."
 	echo "Asking ffmpeg to write $FLAC_DURATION second $SAMPLE_RATE Hz FLAC files..." 
 	## Streaming HLS with FLAC archive 
-	nice -n -10 ffmpeg -f alsa -ac $CHANNELS -ar $SAMPLE_RATE -thread_queue_size 1024 -i hw:$AUDIO_HW_ID -ac $CHANNELS -ar $SAMPLE_RATE -sample_fmt s32 -acodec flac -f segment -segment_time "00:00:$FLAC_DURATION.00" -strftime 1 "/mnt/dev-archive-orcasound-net/flac/$NODE_NAME/%Y-%m-%d_%H-%M-%S_$NODE_NAME-$SAMPLE_RATE-$CHANNELS.flac" -f segment -segment_list "/tmp/m3u8tmp/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac 2 -acodec aac "/mnt/dev-streaming-orcasound-net/$NODE_NAME/hls/$timestamp/live%03d.ts" &
+	nice -n -10 ffmpeg -f alsa -ac $CHANNELS -ar $SAMPLE_RATE -thread_queue_size 1024 -i hw:$AUDIO_HW_ID -ac $CHANNELS -ar $SAMPLE_RATE -sample_fmt s32 -acodec flac -f segment -segment_time "00:00:$FLAC_DURATION.00" -strftime 1 "/mnt/dev-archive-orcasound-net/$NODE_NAME/%Y-%m-%d_%H-%M-%S_$NODE_NAME-$SAMPLE_RATE-$CHANNELS.flac" -f segment -segment_list "/tmp/m3u8tmp/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac 2 -acodec aac "/mnt/dev-streaming-orcasound-net/$NODE_NAME/hls/$timestamp/live%03d.ts" &
 
 ## Default NODE_TYPE settings
 else
