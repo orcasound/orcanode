@@ -115,7 +115,6 @@ elif [ $NODE_TYPE = "dev-stable" ]; then
 	STREAM_RATE=48000 
 	echo "Sampling $CHANNELS channels from $AUDIO_HW_ID at $SAMPLE_RATE Hz..."
 	## Streaming HLS only to S3FS via /mnt directory 
-	echo "Asking ffmpeg to write $FLAC_DURATION second $SAMPLE_RATE Hz FLAC files..." 
         nice -n -10 ffmpeg -f alsa -ac $CHANNELS -ar $SAMPLE_RATE -thread_queue_size 1024 -i hw:$AUDIO_HW_ID -f segment -segment_list "/tmp/m3u8tmp/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac 2 -threads 3 -acodec aac "/mnt/dev-streaming-orcasound-net/$NODE_NAME/hls/$timestamp/live%03d.ts" &
 	## Streaming HLS and FLAC directly to S3FS via /mnt directories
 	## echo "Asking ffmpeg to write $FLAC_DURATION second $SAMPLE_RATE Hz FLAC files..." 
