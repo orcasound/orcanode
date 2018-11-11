@@ -59,7 +59,7 @@ def s3_copy_file(path, filename):
         log.debug('upload key: ' + uploadkey)
         resource.meta.client.upload_file(uploadfile, BUCKET, uploadkey,
                                          ExtraArgs={'ACL': 'public-read'})  # TODO have to build filename into correct key.
-        os.remove(path+'/'+filename)  maybe not necessary since we write to /tmp and reboot every so often
+        os.remove(path+'/'+filename)  # maybe not necessary since we write to /tmp and reboot every so often
     except:
         e = sys.exc_info()[0]
         log.critical('error uploading to S3: '+str(e))
