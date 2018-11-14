@@ -13,6 +13,18 @@ sudo make install
  sudo wget -O /etc/apt/sources.list.d/autostatic-audio-raspbian.list http://rpi.autostatic.com/autostatic-audio-raspbian.list
  sudo apt-get update
  sudo apt-get --no-install-recommends install jackd1 jack-capture
+* Patching Jack 
+To get 192 to work at all I had to patch jack.c in ffmpeg
+/ffmpeg/libavdevice/jack.c
+    *** changed from 100000 + 2 to 100000 + 3 as indicated below 
+    /* Wait for a packet coming back from process_callback(), if one isn't available yet */
+    timeout.tv_sec = av_gettime() / 1000000 + 3;
+    if (sem_timedwait(&self->packet_count, &timeout)) {
+        if (errno == ETIMEDOUT) {
+            av_log(context, AV_LOG_ERROR,
+                   "Input error: timed out when waiting for JACK process callback output\n");
+        } else {
+
 * Notes on testing
 Setup jack 
 
