@@ -32,10 +32,26 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install inotify-tools and rsync
 RUN apt-get update && apt-get install -y --no-install-recommends inotify-tools rsync
 
-# Install ffmpeg
-RUN \
-  apt-get update && \
-  apt-get install -y --no-install-recommends libx264-dev ffmpeg
+
+####################### Build ffmpeg with Jack #####################################################
+
+
+RUN git clone git://source.ffmpeg.org/ffmpeg.git 
+RUN apt-get update && apt-get install -y --no-install-recommends libomxil-bellagio-dev libjack-dev
+# Note removed --enable-mmal which is pi hw accel
+RUN cd ffmpeg && ./configure --arch=armel --target-os=linux --enable-gpl --enable-omx --enable-omx-rpi --enable-nonfree --enable-libjack
+RUN cd ffmpeg && make -j4
+# Hack to patch jack.c with slightly longer timeout
+COPY ./jack.c ./ffmpeg/libavdevice/jack.c 
+RUN cd ffmpeg && make
+RUN cd ffmpeg && make install 
+
+###### Install Jack  #################################
+
+RUN  wget -O - http://rpi.autostatic.com/autostatic.gpg.key| apt-key add -
+RUN wget -O /etc/apt/sources.list.d/autostatic-audio-raspbian.list http://rpi.autostatic.com/autostatic-audio-raspbian.list
+RUN apt-get update && apt-get install -y --no-install-recommends jack-capture
+RUN yes | apt-get update && apt-get install -y --no-install-recommends jackd1
 
 # Install ALSA and GPAC
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -64,6 +80,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     sox \
     tmux \
     wget
+
 
 ############################### Install boto and inotify libraies  ###################################
 

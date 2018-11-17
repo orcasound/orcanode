@@ -16,6 +16,10 @@ mkdir -p /tmp/$NODE_NAME/hls/$timestamp
 # Output timestamp for this (latest) stream
 echo $timestamp > /tmp/$NODE_NAME/latest.txt
 
+#  Setup jack 
+echo @audio - memlock 256000 >> /etc/security/limits.conf
+echo @audio - rtprio 75 >> /etc/security/limits.co
+JACK_NO_AUDIO_RESERVATION=1 jackd -t 2000 -P 75 -d alsa -d hw:pisound -r 192000 -p 1024 -n 10 -s
 
 #### Generate stream segments and manifests, and/or lossless archive
 
@@ -24,7 +28,8 @@ echo "Node is named $NODE_NAME and is of type $NODE_TYPE"
 ## NODE_TYPE set in .env filt to one of: "research"; "debug" (DASH-only); "hls-only"; or default (FLAC+HLS+DASH) 
 
 if [ $NODE_TYPE = "research" ]; then
-	SAMPLE_RATE=192000
+        #SAMPLE_RATE=192000
+        SAMPLE_RATE=48000
 	STREAM_RATE=48000 ## Is it efficient to specify this so mpegts isn't hit by 4x the uncompressed data?
 	## Setup Jack Audio outside for now
 	# sudo echo @audio - memlock 256000 >> /etc/security/limits.conf
@@ -36,7 +41,9 @@ if [ $NODE_TYPE = "research" ]; then
 	sudo nice -n -10 ffmpeg -f jack -i ffjack \
        -f segment -segment_time "00:00:$FLAC_DURATION.00" -strftime 1 "/tmp/$NODE_NAME/flac/%Y-%m-%d_%H-%M-%S_$NODE_NAME-$SAMPLE_RATE-$CHANNELS.flac" \
        -f segment -segment_list "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format \
-       mpegts -ar $STREAM_RATE -ac 2 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" &
+       mpegts -ar $STREAM_RATE -ac 2 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" >/dev/null 2>/dev/null &
+	# takes a second for ffmpeg to make ffjack connection before we can connect
+	sleep 3
 	sudo jack_connect system:capture_1 ffjack:input_1
 	sudo jack_connect system:capture_2 ffjack:input_2
 elif [ $NODE_TYPE = "debug" ]; then
