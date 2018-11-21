@@ -50,8 +50,9 @@ RUN cd ffmpeg && make install
 
 RUN  wget -O - http://rpi.autostatic.com/autostatic.gpg.key| apt-key add -
 RUN wget -O /etc/apt/sources.list.d/autostatic-audio-raspbian.list http://rpi.autostatic.com/autostatic-audio-raspbian.list
+ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends jack-capture
-RUN yes | apt-get update && apt-get install -y --no-install-recommends jackd1
+RUN apt-get update && apt-get install -y --no-install-recommends jackd1
 
 # Install ALSA and GPAC
 RUN apt-get update && apt-get install -y --no-install-recommends \
