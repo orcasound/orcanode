@@ -9,10 +9,11 @@ services:
     ports:
       - "1234:1234"
       - "8080:8080"
-      - "6379:6379"
     devices:
       - "/dev/snd:/dev/snd"
     privileged: true
+    volumes:
+     - ./audio:/audio
 
   logspout:
     # Use unofficial logspout that's been compiled for armhf

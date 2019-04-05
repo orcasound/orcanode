@@ -70,6 +70,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN apt-get update && apt-get install -y python3-pip
 RUN pip3 install -U boto3
 RUN pip3 install inotify
+RUN pip3 install rq
 
 ############################### Copy files #####################################
 
