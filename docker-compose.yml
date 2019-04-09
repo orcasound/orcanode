@@ -1,20 +1,51 @@
-version: "3.2"
+version: "3.0"
 services:
+  redis:
+    #
+    # TODO bind to local port only
+    image: redis:latest
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./data:/data
   streaming:
     image: orcasound/orcanode:arm32v7
-    build: ./
     command: ./stream.sh
     restart: always
     env_file: .env
-    ports:
-      - "1234:1234"
-      - "8080:8080"
     devices:
       - "/dev/snd:/dev/snd"
     privileged: true
     volumes:
      - ./audio:/audio
-
+     - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket:ro
+    build:
+      context: .
+      dockerfile: Dockerfile
+  inotify:
+    image: orcasound/orcanode:arm32v7
+    command: bash -c "./upload_rq_s3.py && ./failed_rq_s3.py" 
+    restart: always
+    env_file: .env
+    privileged: true
+    volumes:
+     - ./audio:/audio
+     - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket:ro
+    depends_on:
+     - redis
+  worker:
+    image: orcasound/orcanode:arm32v7
+    command: rq worker high medium low -u 'redis://redis:6379'
+    restart: always
+    env_file: .env
+    privileged: true
+    volumes:
+     - ./audio:/audio
+     - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket:ro
+    depends_on:
+     - redis
   logspout:
     # Use unofficial logspout that's been compiled for armhf
     # TODO: Build an updated version of this image. Looks unmaintained.
@@ -29,14 +60,4 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - "8000:8000"
-  redis:
-    #
-    # TODO bind to local port only
-    image: redis:latest
-    command: redis-server --appendonly yes
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    volumes:
-      - ./data:/data
     

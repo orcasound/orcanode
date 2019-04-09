@@ -49,7 +49,7 @@ log.addHandler(handler)
         
 s3_copy_file(BASEPATH, PATH, 'latest.txt')
 conn = Redis(host='redis', port=6379)
-q = Queue("high", connection=conn, default_timeout=600)
+q = Queue("high", connection=conn, default_timeout=10)
 i = inotify.adapters.InotifyTree(BASEPATH)
 try:
     for event in i.event_gen(yield_nones=False):

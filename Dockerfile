@@ -63,7 +63,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     nano \
     sox \
     tmux \
-    wget
+    wget \
+    systemd
 
 ############################### Install boto and inotify libraies  ###################################
 

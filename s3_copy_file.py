@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from boto3.s3.transfer import S3Transfer
 import boto3
 import os
@@ -17,6 +18,31 @@ formatter = logging.Formatter('%(module)s.%(funcName)s: %(message)s')
 handler.setFormatter(formatter)
 
 log.addHandler(handler)
+
+def internet(host="8.8.8.8", port=53, timeout=3):
+    """
+    Host: 8.8.8.8 (google-public-dns-a.google.com)
+    OpenPort: 53/tcp
+    Service: domain (DNS/TCP)
+    """
+    import socket
+    try:
+        socket.setdefaulttimeout(timeout)
+        socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
+        return True
+    except Exception as ex:
+        print (ex.message)
+        return False
+
+
+def timecheck():
+    import subprocess
+    if(internet()):
+        foo = str(subprocess.check_output("timedatectl"))
+        return("Network time on: yes" in foo)
+    else:
+        return False
+
 
 def s3_copy_file(basepath, path, filename):
     BUCKET = 'dev-streaming-orcasound-net'

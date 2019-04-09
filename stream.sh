@@ -85,6 +85,7 @@ else
 	## May need to adjust segment length in config_audio.json to match $SEGMENT_DURATION...
 	nice -n -7 ./test-engine-live-tools/bin/live-stream -c ./config_audio.json udp://127.0.0.1:1234 &
 fi
+
 python3 upload_rq_s3.py & 
 python3 failed_rq_s3.py &
 rq worker high medium low -u 'redis://redis:6379' 
