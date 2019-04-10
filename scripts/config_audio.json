@@ -1,0 +1,23 @@
+{
+  "segmentDir": "/tmp/dash_segment_input_dir",
+  "outputDir": "/tmp/dash_output_dir",
+  "mp4box": "MP4Box",
+  "ffmpeg": "ffmpeg",
+  "encoding": {
+    "commandPrefix": [ "-re", "-i", "-", "-threads", "0", "-y" ],
+    "representations": {
+    "audio": [
+        "-map", "0:0", "-vn", "-acodec", "aac", "-strict", "-2", "-ar", "48000", "-ac", "2",
+        "-f", "segment", "-segment_time", "15", "-segment_format", "mpegts"
+      ]
+    }
+  },
+  "packaging": {
+    "mp4box_opts": [
+      "-dash-ctx", "/tmp/dash_output_dir/dash-live.txt", "-dash", "15000", "-rap", "-ast-offset", "12",
+    "-no-frags-default", "-bs-switching", "no","-mpd-refresh", "5",  "-min-buffer", "15000", "-url-template", "-time-shift",
+      "-1", "-mpd-title", "MPEG-DASH live stream", "-mpd-info-url", "http://www.orcasound.net/", "-keep-utc", "-segment-name",
+      "live_$RepresentationID$_", "-out", "/tmp/dash_output_dir/live", "-dynamic", "-subsegs-per-sidx", "-1", "-tmp", "/tmp/"
+    ]
+  }
+}
