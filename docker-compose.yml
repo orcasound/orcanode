@@ -12,8 +12,8 @@ services:
       - ./data:/data
   streaming:
     image: orcasound/orcanode:arm32v7
-    command: ["sh", "-c", "sleep 2073600"]
-#    command: ./stream.sh
+#    command: ["sh", "-c", "sleep 2073600"]
+    command: ./stream.sh
     restart: always
     env_file: .env
     devices:
