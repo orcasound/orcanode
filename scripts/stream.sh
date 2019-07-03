@@ -84,9 +84,9 @@ elif [ $NODE_TYPE = "dev-virt-s3" ]; then
   echo "Sampling $CHANNELS channels from $AUDIO_HW_ID at $SAMPLE_RATE Hz..."
     echo "Asking ffmpeg to stream only HLS segments at $STREAM_RATE Hz......"
     ## Streaming HLS only via mpegts
-  nice -n -10 ffmpeg -re -fflags +genpts -stream_loop -1 -i "../samples/haro-strait_2005.wav" \
+  nice -n -10 ffmpeg -re -fflags +genpts -stream_loop -1 -i "samples/haro-strait_2005.wav" \
     -f segment -segment_list "/audio/$NODE_NAME/hls/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts \
-    -ar $STREAM_RATE -ac $CHANNELS -threads 3 -acodec aac "/audio/$NODE_NAME/hls/$timestamp/live%03d.ts" &
+    -ar $STREAM_RATE -ac $CHANNELS -threads 3 -acodec aac "/audio/$NODE_NAME/hls/$timestamp/live%03d.ts"
 else
   SAMPLE_RATE=48000
   STREAM_RATE=48000
