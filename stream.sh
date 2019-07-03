@@ -108,7 +108,7 @@ elif [ $NODE_TYPE = "dev-virt-s3" ]; then
     ## Streaming HLS only via mpegts
   nice -n -10 ffmpeg -re -fflags +genpts -stream_loop -1 -i "samples/haro-strait_2005.wav" \
     -f segment -segment_list "/tmp/m3u8tmp/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts \
-    -ar $STREAM_RATE -ac $CHANNELS -threads 3 -acodec aac "/mnt/streaming-orcasound-net/$NODE_NAME/hls/$timestamp/live%03d.ts" &
+    -ar $STREAM_RATE -ac $CHANNELS -threads 3 -acodec aac "/mnt/dev-streaming-orcasound-net/$NODE_NAME/hls/$timestamp/live%03d.ts" &
 
 elif [ $NODE_TYPE = "dev-stable" ]; then
 	SAMPLE_RATE=48000
