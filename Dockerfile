@@ -4,7 +4,7 @@
 # Docker currently has a bug where armel is used instead when relying on
 # multiarch manifest: https://github.com/moby/moby/issues/34875
 # When this is fixed, this can be changed to just `FROM debian:stretch-slim`
-FROM arm32v7/debian:stretch-slim
+FROM arm32v7/debian:buster-slim
 MAINTAINER Orcasound <orcanode-devs@orcasound.net>
 
 # Upgrade OS
@@ -27,19 +27,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     gnupg \
     wget \
-    git
+    git 
 
 # Install inotify-tools and rsync
 RUN apt-get update && apt-get install -y --no-install-recommends inotify-tools rsync
+
+
+###### hack to get ffmpeg to build
+# RUN apt-get update && apt-get install -y --no-install-recommends libraspberrypi-dev raspberrypi-kernel-headers
+# RUN git clone https://github.com/raspberrypi/userland.git
+# RUN cd userland/host_applications/linux/apps/hello_pi && ./rebuild.sh
 
 
 ####################### Build ffmpeg with Jack #####################################################
 
 
 RUN git clone git://source.ffmpeg.org/ffmpeg.git 
-RUN apt-get update && apt-get install -y --no-install-recommends libomxil-bellagio-dev libjack-dev
-# Note removed --enable-mmal which is pi hw accel
-RUN cd ffmpeg && ./configure --arch=armel --target-os=linux --enable-gpl --enable-omx --enable-omx-rpi --enable-nonfree --enable-libjack
+RUN apt-get update && apt-get install -y --no-install-recommends libomxil-bellagio-dev libjack-dev 
+RUN cd ffmpeg && ./configure --arch=armel --target-os=linux --enable-gpl --enable-nonfree --enable-libjack 
 RUN cd ffmpeg && make -j4
 # Hack to patch jack.c with slightly longer timeout
 COPY ./jack.c ./ffmpeg/libavdevice/jack.c 
@@ -48,8 +53,6 @@ RUN cd ffmpeg && make install
 
 ###### Install Jack  #################################
 
-RUN  wget -O - http://rpi.autostatic.com/autostatic.gpg.key| apt-key add -
-RUN wget -O /etc/apt/sources.list.d/autostatic-audio-raspbian.list http://rpi.autostatic.com/autostatic-audio-raspbian.list
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends jack-capture
 RUN apt-get update && apt-get install -y --no-install-recommends jackd1
@@ -64,14 +67,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN curl -sL https://deb.nodesource.com/setup_6.x | bash - && \
   apt-get update && apt-get install -y --no-install-recommends nodejs
 
+RUN apt-get update && apt-get install -y --no-install-recommends  npm
+
 RUN npm install -g \
   http-server \
   jsonlint
 
+# Not needed for flac
 # Install test-engine-live-tools
-RUN git clone https://github.com/ebu/test-engine-live-tools.git && \
-  cd test-engine-live-tools && \
-  npm install
+# RUN git clone https://github.com/ebu/test-engine-live-tools.git && \
+#  cd test-engine-live-tools && \
+#   npm install
 
 # Install misc tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
