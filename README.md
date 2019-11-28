@@ -30,6 +30,7 @@ AWS_SECRET_ACCESS_KEY=YourAWSsecretAccessKey
 
 NODE_NAME=YourNodeName
 NODE_TYPE=hls-only
+NODE_LOOPBACK=false
 AUDIO_HW_ID=1,0
 CHANNELS=2
 FLAC_DURATION=30
@@ -45,6 +46,7 @@ SYSLOG_STRUCTURED_DATA='logdna@YourLogDNAnumber key="YourLogDNAKey" tag="docker"
 * CHANNELS indicates the number of audio channels to expect (1 or 2). 
 * FLAC_DURATION is the amount of seconds you want in each archvied lossless file. 
 * SEGMENT_DURATION is the amount of seconds you want in each streamed lossy segment.
+* NODE_LOOPBACK should be set to true to loop input to local output
 
 ## Running local tests
 
