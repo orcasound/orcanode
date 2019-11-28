@@ -34,7 +34,8 @@ NODE_LOOPBACK=false
 AUDIO_HW_ID=1,0
 CHANNELS=2
 FLAC_DURATION=30
-SEGMENT_DURATION=10 
+SEGMENT_DURATION=10
+SAMPLING_RATE=48000
  
 SYSLOG_URL=syslog+tls://syslog-a.logdna.com:YourLogDNAPort
 SYSLOG_STRUCTURED_DATA='logdna@YourLogDNAnumber key="YourLogDNAKey" tag="docker"
@@ -46,6 +47,7 @@ SYSLOG_STRUCTURED_DATA='logdna@YourLogDNAnumber key="YourLogDNAKey" tag="docker"
 * CHANNELS indicates the number of audio channels to expect (1 or 2). 
 * FLAC_DURATION is the amount of seconds you want in each archvied lossless file. 
 * SEGMENT_DURATION is the amount of seconds you want in each streamed lossy segment.
+* SAMPLING_RATE is the hardware sampling rate of the pi sound card.  Allowed values are 48000, 96000 and 19200.  RPI4 recommended for 96000 and 19200 
 * NODE_LOOPBACK should be set to true to loop input to local output
 
 ## Running local tests
