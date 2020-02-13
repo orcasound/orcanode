@@ -1,6 +1,6 @@
 # Orcasound's orcanode
 
-This software captures local audio data and streams it to AWS S3 buckets -- both as lossy (AAC-encoded) data in HLS segments for live-listening and as a lossless (FLAC-encoded) for archiving and/or acoustic analysis. There are branches for both arm32v7 and amd64 architectures, though the majority of initial development has been on the ARM-based Raspberry Pi3b. The current branches use ffmpeg+s3fs calle by a bash script; an improved upload script is under development using ffmpeg+boto within a Python script.
+This software captures local audio data and streams it to AWS S3 buckets -- both as lossy (AAC-encoded) data in HLS segments for live-listening and as a lossless (FLAC-encoded) for archiving and/or acoustic analysis. There are branches for both arm32v7 and amd64 architectures, though the majority of initial development has been on the ARM-based Raspberry Pi. The current branches use ffmpeg+s3fs called by a bash script; an improved upload script is under development using ffmpeg+boto within a Python script, possibly with redis handling queueing.
 
 ## Background & motivation
 
