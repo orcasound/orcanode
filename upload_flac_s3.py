@@ -32,7 +32,7 @@ PATH = os.path.join(BASEPATH, "flac")
 # s3.Bucket(name='dev-archive-orcasound-net')  // flac
 # s3.Bucket(name='dev-streaming-orcasound-net') // hls 
 
-BUCKET = 'dev-archive-orcasound-net'
+
 REGION = 'us-west-2'
 LOGLEVEL = logging.DEBUG
 
@@ -46,6 +46,14 @@ formatter = logging.Formatter('%(module)s.%(funcName)s: %(message)s')
 handler.setFormatter(formatter)
 
 log.addHandler(handler)
+
+BUCKET = 'dev-archive-orcasound-net'
+if "BUCKET_TYPE" in os.environ:
+    if(os.environ["BUCKET_TYPE"] == "prod"):
+        BUCKET = 'archive-orcasound-net'
+    else:
+        log.debug("flac files bucket dev-archive-orcasound-net")
+
 
 def s3_copy_file(path, filename):
     log.debug('uploading file '+filename+' from '+path+' to bucket '+BUCKET)

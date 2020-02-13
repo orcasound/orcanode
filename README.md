@@ -36,6 +36,7 @@ CHANNELS=2
 FLAC_DURATION=30
 SEGMENT_DURATION=10
 SAMPLING_RATE=48000
+BUCKET_TYPE=dev
  
 SYSLOG_URL=syslog+tls://syslog-a.logdna.com:YourLogDNAPort
 SYSLOG_STRUCTURED_DATA='logdna@YourLogDNAnumber key="YourLogDNAKey" tag="docker"
@@ -49,6 +50,7 @@ SYSLOG_STRUCTURED_DATA='logdna@YourLogDNAnumber key="YourLogDNAKey" tag="docker"
 * SEGMENT_DURATION is the amount of seconds you want in each streamed lossy segment.
 * SAMPLING_RATE is the hardware sampling rate of the pi sound card.  Allowed values are 48000, 96000 and 19200.  RPI4 recommended for 96000 and 19200 
 * NODE_LOOPBACK should be set to true to loop input to local output
+* BUCKET_TYPE should be dev or prod depending upon which orcasound aws bucket you are streaming to
 
 ## Running local tests
 
