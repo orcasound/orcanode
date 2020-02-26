@@ -52,16 +52,24 @@ In the repository directory (where you also put your .env file) run `docker-comp
 
 ### Running an end-to-end test
 
-Once you've verified that s3fs is transferring files to your S3 buckets (with public read access), you can test the stream using a browser-based reference player.  For example, with [Bitmovin HLS/MPEG/DASH player] you can use the drop-down menu to select HLS and then paste the URL for your current S3-based m3u8 manifest file into it to listen to the stream.
+Once you've verified files are making it to your S3 bucket (with public read access), you can test the stream using a browser-based reference player.  For example, with [Bitmovin HLS/MPEG/DASH player] you can use the drop-down menu to select HLS and then paste the URL for your current S3-based m3u8 manifest file into it to listen to the stream.
 
 Your URL should look something like this:
 ```
 https://s3-us-west-2.amazonaws.com/dev-streaming-orcasound-net/rpi_seattle/hls/1526661120/live.m3u8
 ```
+For end-to-end tests of Orcasound nodes, this schematic describes how sources map to the .dev, .beta, and .live subdomains of orcasound.net --
+
+![Schematic of Orcasound source-subdomain mapping](http://orcasound.net/img/orcasound-app/Orcasound-software-evolution-model.png "Orcasound software evolution model")
+
+-- and you can monitor your development stream via the web-app using this URL structure:
+
+```dev.orcasound.net/dynamic/node_name``` so for node_name = rpi_orcasound_lab the test URL would be [dev.orcasound.net/dynamic/rpi_orcasound_lab](dev.orcasound.net/dynamic/rpi_orcasound_lab).
+
 
 ## Deployment
 
-If you would like to add a node to the Orcasound hydrophone network, deployment of the current code to new devices is handled via Resin.io and you should contact Scott for guidance on how to participate.
+If you would like to add a node to the Orcasound hydrophone network, contact Scott for guidance on how to participate.
 
 ## Built With
 
