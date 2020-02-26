@@ -64,7 +64,7 @@ For end-to-end tests of Orcasound nodes, this schematic describes how sources ma
 
 -- and you can monitor your development stream via the web-app using this URL structure:
 
-```dev.orcasound.net/dynamic/node_name``` so for node_name = rpi_orcasound_lab the test URL would be [dev.orcasound.net/dynamic/rpi_orcasound_lab](dev.orcasound.net/dynamic/rpi_orcasound_lab).
+```dev.orcasound.net/dynamic/node_name``` so for node_name = rpi_orcasound_lab the test URL would be [dev.orcasound.net/dynamic/rpi_orcasound_lab](http://dev.orcasound.net/dynamic/rpi_orcasound_lab).
 
 
 ## Deployment
