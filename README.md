@@ -38,7 +38,8 @@ SEGMENT_DURATION=10
 SAMPLING_RATE=48000
 
 BUCKET_TYPE=dev
-BUCKET=YourBucketName
+BUCKET_STREAMING=YourStreamingBucketName
+BUCKET_ARCHIVE=YourArchiveBucketName
 REGION=YourAWSRegion
  
 SYSLOG_URL=syslog+tls://syslog-a.logdna.com:YourLogDNAPort
