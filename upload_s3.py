@@ -47,14 +47,18 @@ handler.setFormatter(formatter)
 
 log.addHandler(handler)
 
-BUCKET = os.environ["BUCKET"]
+BUCKET = ""
 if "BUCKET_TYPE" in os.environ:
     if(os.environ["BUCKET_TYPE"] == "prod"):
         print("using production bucket")
         BUCKET = 'streaming-orcasound-net'
+    elif (os.environ["BUCKET_TYPE"] == "custom"):
+        print("using custom bucket")
+        BUCKET = os.environ["BUCKET_STREAMING"]
     else:
-        print("using dev bucket")
-        log.debug("hls bucket set to ", BUCKET)
+        BUCKET = "dev-streaming-orcasound-net"
+
+    log.debug("hls bucket set to ", BUCKET)
 
 def s3_copy_file(path, filename):
     log.debug('uploading file '+filename+' from '+path+' to bucket '+BUCKET)

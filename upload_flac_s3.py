@@ -47,12 +47,19 @@ handler.setFormatter(formatter)
 
 log.addHandler(handler)
 
-BUCKET = os.environ["BUCKET"]
+BUCKET = ""
 if "BUCKET_TYPE" in os.environ:
     if(os.environ["BUCKET_TYPE"] == "prod"):
+        print("using production bucket")
         BUCKET = 'archive-orcasound-net'
+    elif (os.environ["BUCKET_TYPE"] == "custom"):
+        print("using custom bucket")
+        BUCKET = os.environ["BUCKET_ARCHIVE"]
     else:
-        log.debug("flac files bucket ", BUCKET)
+        print("using dev bucket")
+        BUCKET = "dev-archive-orcasound-net"
+        
+    log.debug("archive bucket set to ", BUCKET)
 
 
 def s3_copy_file(path, filename):
