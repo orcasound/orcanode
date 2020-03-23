@@ -36,7 +36,11 @@ CHANNELS=2
 FLAC_DURATION=30
 SEGMENT_DURATION=10
 SAMPLING_RATE=48000
+
 BUCKET_TYPE=dev
+BUCKET_STREAMING=YourStreamingBucketName
+BUCKET_ARCHIVE=YourArchiveBucketName
+REGION=YourAWSRegion
  
 SYSLOG_URL=syslog+tls://syslog-a.logdna.com:YourLogDNAPort
 SYSLOG_STRUCTURED_DATA='logdna@YourLogDNAnumber key="YourLogDNAKey" tag="docker"
@@ -48,9 +52,12 @@ SYSLOG_STRUCTURED_DATA='logdna@YourLogDNAnumber key="YourLogDNAKey" tag="docker"
 * CHANNELS indicates the number of audio channels to expect (1 or 2). 
 * FLAC_DURATION is the amount of seconds you want in each archvied lossless file. 
 * SEGMENT_DURATION is the amount of seconds you want in each streamed lossy segment.
-* SAMPLING_RATE is the hardware sampling rate of the pi sound card.  Allowed values are 48000, 96000 and 19200.  RPI4 recommended for 96000 and 19200 
-* NODE_LOOPBACK should be set to true to loop input to local output
-* BUCKET_TYPE should be dev or prod depending upon which orcasound aws bucket you are streaming to
+* SAMPLING_RATE is the hardware sampling rate of the pi sound card.  Allowed values are 48000, 96000 and 19200.  RPI4 recommended for 96000 and 19200 .
+* NODE_LOOPBACK should be set to true to loop input to local output.
+* BUCKET_TYPE should be dev or prod depending upon which orcasound aws bucket you are streaming to.
+* BUCKET_STREAMING is the name of your AWS S3 streaming bucket. Only applies if BUCKET_TYPE=custom.
+* ARCHIVE is the name of your AWS S3 archive bucket. Only applies if BUCKET_TYPE=custom.
+* REGION is the region of your AWS S3 bucket. (e.g. 'us-west-2')
 
 ## Running local tests
 

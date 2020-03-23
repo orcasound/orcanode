@@ -33,7 +33,7 @@ PATH = os.path.join(BASEPATH, "hls")
 # s3.Bucket(name='dev-streaming-orcasound-net') // hls 
 
         
-REGION = 'us-west-2'
+REGION = os.environ["REGION"]
 LOGLEVEL = logging.DEBUG
 
 log = logging.getLogger(__name__)
@@ -47,14 +47,18 @@ handler.setFormatter(formatter)
 
 log.addHandler(handler)
 
-BUCKET = 'dev-streaming-orcasound-net'
+BUCKET = ""
 if "BUCKET_TYPE" in os.environ:
     if(os.environ["BUCKET_TYPE"] == "prod"):
         print("using production bucket")
         BUCKET = 'streaming-orcasound-net'
+    elif (os.environ["BUCKET_TYPE"] == "custom"):
+        print("using custom bucket")
+        BUCKET = os.environ["BUCKET_STREAMING"]
     else:
-        print("using dev bucket")
-        log.debug("hls bucket set to dev-streaming-orcasound-net")
+        BUCKET = "dev-streaming-orcasound-net"
+
+    log.debug("hls bucket set to ", BUCKET)
 
 def s3_copy_file(path, filename):
     log.debug('uploading file '+filename+' from '+path+' to bucket '+BUCKET)
