@@ -14,11 +14,11 @@ These instructions will get you a copy of the project up and running on your loc
 
 If you want to set up your hardware to host a hydrophone within the Orcasound network, take a look at [how to join Orcasound](http://www.orcasound.net/join/) and [our prototype built from a Raspberry Pi3b with the Pisound Hat](http://www.orcasound.net/2018/04/27/orcasounds-new-live-audio-solution-from-hydrophone-to-headphone-with-a-raspberry-pi-computer-and-hls-dash-streaming-software/).
 
-Audio data is acquired within a Docker container by ALSA/FFmpeg, written to /tmp directories, transfered to /mnt directories by rsync, and transferred to AWS S3 buckets by s3fs. Errors/etc are logged to LogDNA via a separate Docker container.
+Audio data is acquired within a Docker container by ALSA/FFmpeg, written to /tmp directories, transferred to /mnt directories by rsync, and transferred to AWS S3 buckets by s3fs. Errors/etc are logged to LogDNA via a separate Docker container.
 
 ### Prerequisites
 
-An ARM or X86 device with a sound card (or other audio input device) connected to the Internet (via wireless network or ethernet cable) that has [Docker-compose](https://docs.docker.com/compose/install/) installed and an AWS account with some S3 buckets set up.
+An ARM or X86 device with a sound card (or other audio input devices) connected to the Internet (via wireless network or ethernet cable) that has [Docker-compose](https://docs.docker.com/compose/install/) installed and an AWS account with some S3 buckets set up.
 
 ### Installing
 
@@ -41,9 +41,9 @@ SYSLOG_STRUCTURED_DATA='logdna@YourLogDNAnumber key="YourLogDNAKey" tag="docker"
 
 * NODE_NAME should indicate your device and it's location, ideally in the form `device_location` (e.g. we call our Raspberry Pi staging device in Seattle `rpi_seattle`. 
 * NODE_TYPE determines what audio data formats will be generated and transferred to their respective AWS buckets. 
-* AUDIO_HW_ID is the card,device providing the audio data. 
+* AUDIO_HW_ID is the card, device providing the audio data. 
 * CHANNELS indicates the number of audio channels to expect (1 or 2). 
-* FLAC_DURATION is the amount of seconds you want in each archvied lossless file. 
+* FLAC_DURATION is the amount of seconds you want in each archived lossless file. 
 * SEGMENT_DURATION is the amount of seconds you want in each streamed lossy segment.
 
 ## Running local tests
