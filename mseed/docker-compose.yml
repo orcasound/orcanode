@@ -1,0 +1,22 @@
+version: "3"
+services:
+  pull:
+    image: orcastream/orcamseed
+    build: ./
+    command: tail -F README.md
+    #    command: python3 mseedpull.py
+    restart: always
+    env_file: .env
+    volumes:
+      - data:/root/data
+  stream:
+    image: orcastream/orcamseed
+    build: ./
+    command: tail -F README.md
+    # command: ./streamfiles.sh
+    restart: always
+    env_file: .env
+
+
+volumes:
+  data:
