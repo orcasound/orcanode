@@ -112,9 +112,12 @@ def fetchAndConvert(files):
                 sampling_rate = hydro[0].meta['sampling_rate']
                 # writing to wav file
                 wavfilename = path2Filename(filepath)
+                tsname = (filepath[:-12]+'ts').replace(':', '-')
                 hydro.write(wavfilename, framerate=sampling_rate, format='WAV')
+                os.system('ffmpeg -i {filename} -f mpegts -acodec aac {tsfilename}'.format(filename=wavfilename, tsfilename=tsname))
+                os.remove(wavfilename)
                 file['samplerate'] = sampling_rate
-                file['wavfilename'] = wavfilename
+                file['tsfilename'] = tsname
                 filesdone.append(filepath)
                 convertedfiles.append(file)
     return(convertedfiles)
@@ -127,18 +130,18 @@ def queueFiles(files):
     for idx, entry in enumerate(files):
         duration = timedelta(seconds=entry['duration'])
         age = now - entry['datetime']
-        wavefilename = entry['wavfilename']
+        tsfilename = entry['tsfilename']
         filepath = entry['filepath']
         if (delay + duration < age):  # in the past
-            print('deleting old entry: ' + wavefilename)
-            os.remove(wavefilename)
+            print('deleting old entry: ' + tsfilename)
+            os.remove(tsfilename)
             filesdone.remove(filepath)
             del files[idx]
             deleted += 1
         if ((delay + duration >= age) and (age > delay)):
                 # should be playing next
-            print('playing : ' + wavefilename)
-            shutil.move(wavefilename, '/root/data/dummy.wav')
+            print('playing : ' + tsfilename)
+            shutil.move(tsfilename, '/root/data/dummy.ts')
             played += 1
             filesdone.remove(filepath)
             del files[idx]
@@ -154,7 +157,7 @@ def main_loop():
         # TODO this converts correctly but after queue files it
         # get overwritten by fetchandconver
         # you need to change it fetchandconvert appends the exisitng list
-        # and all timedate stamps are only converted once at most.
+        # and all timedate stamps are only converted once at most.    
         print("checking")
         files = getFileUrls()
         print(f'number of URLS: {len(files)}')
@@ -167,6 +170,12 @@ def main_loop():
 
 main_loop()
 
+# todo - try encoding first to aac .ts and then stream looping
+# ffmpeg -i dummy.wav -f mpegts -acodec aac dummy.ts
+
+# splitting into 10 second .ts files 
+
+# os.system('ffmpeg -i {filename} -f segment -segment_list "live.m3u8" -segment_time 10 -segment_format mpegts -ar 48000 -ac 2 -acodec aac "live/live%03d.ts"'.format(filename=wavfilename))
 # To encode hls forever
 #
 # ffmpeg -re -stream_loop -1 -i list.txt -f segment -segment_list \
