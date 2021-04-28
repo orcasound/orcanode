@@ -20,6 +20,7 @@ from html.parser import HTMLParser
 import time
 from datetime import datetime, timedelta
 import os
+import shutil
 import dateutil.parser
 
 DELAY = int(os.environ["STREAM_DELAY"])
@@ -129,7 +130,7 @@ def queueFiles(files):
         wavefilename = entry['wavfilename']
         filepath = entry['filepath']
         if (delay + duration < age):  # in the past
-            print('deleting old entry: ' + wavfilename)
+            print('deleting old entry: ' + wavefilename)
             os.remove(wavefilename)
             filesdone.remove(filepath)
             del files[idx]
@@ -137,7 +138,7 @@ def queueFiles(files):
         if ((delay + duration >= age) and (age > delay)):
                 # should be playing next
             print('playing : ' + wavefilename)
-            os.rename(wavefilename, '/root/data/dummy.wav')
+            shutil.move(wavefilename, '/root/data/dummy.wav')
             played += 1
             filesdone.remove(filepath)
             del files[idx]
