@@ -10,7 +10,7 @@ mkdir -p /tmp/$NODE_NAME/hls
 mkdir -p /tmp/$NODE_NAME/hls/$timestamp
 # Output timestamp for this (latest) stream
 echo $timestamp > /tmp/$NODE_NAME/latest.txt
-
+mkdir -p /root/data
 # Create a starting dummy file so you will always at least get a tone
 sox -n -r 64000 /root/data/dummy.wav synth 60 sine 500
 
