@@ -58,7 +58,7 @@ if "BUCKET_TYPE" in os.environ:
     else:
         BUCKET = "dev-streaming-orcasound-net"
 
-    log.debug("hls bucket set to ", BUCKET)
+    log.debug("hls bucket set to "+BUCKET)
 
 def s3_copy_file(path, filename):
     log.debug('uploading file '+filename+' from '+path+' to bucket '+BUCKET)
