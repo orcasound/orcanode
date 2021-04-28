@@ -1,6 +1,6 @@
-# Orcasound's orcanode
+# Orcasound's orcastream
 
-This software captures local audio data and streams it to AWS S3 buckets -- both as lossy (AAC-encoded) data in HLS segments for live-listening and as a lossless (FLAC-encoded) for archiving and/or acoustic analysis. There are branches for both arm32v7 and amd64 architectures, though the majority of initial development has been on the ARM-based Raspberry Pi. The current branches use ffmpeg+s3fs called by a bash script; an improved upload script is under development using ffmpeg+boto within a Python script, possibly with redis handling queueing.
+This software contains audio tools and scripts for capturing, reformatting, transcoding and uploading audio for Orcasound.  There is a base set of tools and a couple of specific projects, orcanode and orcamseed.  Orcanode is streaming using Intel (amd64) or Raspberry Pi (arm32v7) platforms using a soundcard.  While any soundcard should work the most common one in use is the pisound board on either a Raspberry Pi 3B+ or 4.  The other project orcamseed is for converting mseed format data to be streamed on Orcanode.  This is mailing used for the [OOI](https://oceanobservatories.org/ "OOI") network.  See the readme in each of those directories for more info.
 
 ## Background & motivation
 
@@ -22,18 +22,11 @@ An ARM or X86 device with a sound card (or other audio input devices) connected 
 
 ### Installing
 
-Choose the branch that is appropriate for your architecture. Clone that branch and create an .env file that contains the following:
+Create a base docker image for your architecture by running the script in /base/rpi or /base/amd64 as appropriate.  You will need to create a .env file as appropriate for your projects.  Common to to all projects are the need for AWS keys
 
 ```
 AWSACCESSKEYID=YourAWSaccessKey
 AWSSECRETACCESSKEY=YourAWSsecretAccessKey
-
-NODE_NAME=YourNodeName
-NODE_TYPE=hls-only
-AUDIO_HW_ID=1,0
-CHANNELS=2
-FLAC_DURATION=30
-SEGMENT_DURATION=10 
  
 SYSLOG_URL=syslog+tls://syslog-a.logdna.com:YourLogDNAPort
 SYSLOG_STRUCTURED_DATA='logdna@YourLogDNAnumber key="YourLogDNAKey" tag="docker"
@@ -45,6 +38,8 @@ SYSLOG_STRUCTURED_DATA='logdna@YourLogDNAnumber key="YourLogDNAKey" tag="docker"
 * CHANNELS indicates the number of audio channels to expect (1 or 2). 
 * FLAC_DURATION is the amount of seconds you want in each archived lossless file. 
 * SEGMENT_DURATION is the amount of seconds you want in each streamed lossy segment.
+
+## Building your 
 
 ## Running local tests
 
