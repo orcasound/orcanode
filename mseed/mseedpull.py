@@ -22,13 +22,13 @@ from datetime import datetime, timedelta
 import os
 import dateutil.parser
 
-DELAY = os.environ["STREAM_DELAY"]
+DELAY = int(os.environ["STREAM_DELAY"])
 # DELAY = 6.5
-SEGMENT = os.environ["DELAY_SEGMENT"] maybe change to "buffer"
+SEGMENT = int(os.environ["DELAY_SEGMENT"]) # maybe change to "buffer"
 # SEGMENT = 1
 # TODO Should put this in env variable
-BASE_URL = os.environ["BASE_URL"]
-# BASE_URL = 'https://rawdata.oceanobservatories.org/files/RS01SBPS/PC01A/08-HYDBBA103/'
+#BASE_URL = os.environ["BASE_URL"]
+BASE_URL = 'https://rawdata.oceanobservatories.org/files/RS01SBPS/PC01A/08-HYDBBA103/'
 
 # Format of date in filename is ISO 8601 extended format
 # To parse the start time of the file 
