@@ -1,4 +1,4 @@
 ffconcat version 1.0
-file '/root/data/dummy.wav'
-file '/root/files.txt'
+file 'data/dummy.wav'
+file 'files.txt'
 
