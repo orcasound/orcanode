@@ -22,6 +22,9 @@ from datetime import datetime, timedelta
 import os
 import shutil
 import dateutil.parser
+import logging
+import logging.handlers
+import sys
 
 DELAY = int(os.environ["STREAM_DELAY"])
 # DELAY = 6.5
@@ -38,6 +41,18 @@ BASE_URL = 'https://rawdata.oceanobservatories.org/files/RS01SBPS/PC01A/08-HYDBB
 # datetime.datetime(2021, 1, 9, 0, 15, 0, 15)
 TIME_PREFIX = os.environ['TIME_PREFIX']
 TIME_POSTFIX = os.environ['TIME_POSTFIX']
+LOGLEVEL = logging.DEBUG
+
+log = logging.getLogger(__name__)
+
+log.setLevel(LOGLEVEL)
+
+handler = logging.StreamHandler(sys.stdout)
+
+formatter = logging.Formatter('%(module)s.%(funcName)s: %(message)s')
+handler.setFormatter(formatter)
+
+log.addHandler(handler)
 
 filesdone = []  # files that have already been converted
 
@@ -78,10 +93,6 @@ def getFileUrls():
     return filelist
 
 
-def path2Filename(filepath):
-    return(filepath[:-12]+'wav').replace(':', '-')
-
-
 def fetchAndConvert(files):
     convertedfiles = []
     toconvert = 0
@@ -95,7 +106,7 @@ def fetchAndConvert(files):
         if filepath not in filesdone:
             if (filedelay < maxdelay and filedelay > mindelay):
                 toconvert += 1
-    print(f'files to convert: {toconvert}')
+    log.debug(f'files to convert: {toconvert}')
     for file in files:
         filetime = file['datetime']
         url = file['url']
@@ -111,7 +122,7 @@ def fetchAndConvert(files):
                 hydro[0].data = hydro[0].data * 1e4
                 sampling_rate = hydro[0].meta['sampling_rate']
                 # writing to wav file
-                wavfilename = path2Filename(filepath)
+                wavfilename = (filepath[:-12]+'wav').replace(':', '-')  # TODO Could be tmp filename
                 tsname = (filepath[:-12]+'ts').replace(':', '-')
                 hydro.write(wavfilename, framerate=sampling_rate, format='WAV')
                 os.system('ffmpeg -i {filename} -f mpegts -acodec aac {tsfilename}'.format(filename=wavfilename, tsfilename=tsname))
@@ -122,7 +133,7 @@ def fetchAndConvert(files):
                 convertedfiles.append(file)
     return(convertedfiles)
 
-def queueFiles(files):
+def queueFiles(files:)
     delay = timedelta(hours=DELAY)
     now = datetime.utcnow()
     played = 0
@@ -133,14 +144,14 @@ def queueFiles(files):
         tsfilename = entry['tsfilename']
         filepath = entry['filepath']
         if (delay + duration < age):  # in the past
-            print('deleting old entry: ' + tsfilename)
+            log.debug('deleting old entry: ' + tsfilename)
             os.remove(tsfilename)
             filesdone.remove(filepath)
             del files[idx]
             deleted += 1
         if ((delay + duration >= age) and (age > delay)):
                 # should be playing next
-            print('playing : ' + tsfilename)
+            log.debug('playing : ' + tsfilename)
             shutil.move(tsfilename, '/root/data/dummy.ts')
             played += 1
             filesdone.remove(filepath)
@@ -158,13 +169,13 @@ def main_loop():
         # get overwritten by fetchandconver
         # you need to change it fetchandconvert appends the exisitng list
         # and all timedate stamps are only converted once at most.    
-        print("checking")
+        log.debug("checking")
         files = getFileUrls()
-        print(f'number of URLS: {len(files)}')
+        log.debug(f'number of URLS: {len(files)}')
         convertedfiles.extend(fetchAndConvert(files))
-        print(f'number of converted files: {len(files)}')
+        log.debug(f'number of converted files: {len(files)}')
         played, deleted, convertedfiles = queueFiles(convertedfiles)
-        print(f'played: {played}, deleted: {deleted}')
+        log.debug(f'played: {played}, deleted: {deleted}')
         time.sleep(150.0 - ((time.time() - starttime) % 150.0))
 
 
