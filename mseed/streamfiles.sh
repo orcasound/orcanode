@@ -26,6 +26,7 @@ done
 
 echo "starting ffmpeg"
 
+
 ffmpeg -re -stream_loop -1 -i files.txt -flush_packets 0 -f segment -segment_list "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" -segment_list_flags +live -segment_time 10 -segment_format mpegts -ar 64000 -ac 1 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" &
 
 python3 upload_s3.py
