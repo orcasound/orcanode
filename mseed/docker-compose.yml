@@ -18,6 +18,7 @@ services:
     env_file: .env
     volumes:
       - data:/root/data
+    privileged: true
   logspout:
     image: gliderlabs/logspout
     command: ${SYSLOG_URL}
