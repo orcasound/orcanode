@@ -131,7 +131,7 @@ def fetchAndConvert(files):
                 # TODO fix this -ar to actually use sampling_rate
                 if os.path.exists(tsname):
                         os.remove(tsname)
-                os.system('ffmpeg -i {filename} -f mpegts -ar 64000 -acodec aac {tsfilename}'.format(filename=wavfilename, tsfilename=tsname))
+                os.system('ffmpeg -i {filename} -f mpegts -ar 64000 -acodec aac -ac 1 {tsfilename}'.format(filename=wavfilename, tsfilename=tsname))
                 log.debug('made mpegts')
                 if os.path.exists(wavfilename):
                         os.remove(wavfilename)
