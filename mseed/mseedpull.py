@@ -98,7 +98,8 @@ def fetchAndConvert(files):
     toconvert = 0
     now = datetime.utcnow()
     maxdelay = timedelta(hours=DELAY)
-    mindelay = maxdelay - timedelta(hours=SEGMENT)
+    #    mindelay = maxdelay - timedelta(hours=SEGMENT)
+    mindelay = maxdelay - timedelta(minutes=10)
     for file in files:
         filepath = file['filepath']
         filetime = file['datetime']
@@ -117,6 +118,7 @@ def fetchAndConvert(files):
             if (filedelay < maxdelay and filedelay > mindelay):
                 # reading from url
                 hydro = read(full_url)  # load file into obspy object
+                log.debug('read url')
                 file['duration'] = hydro[0].meta['endtime'] - hydro[0].meta['starttime']
                 # increasing amplitude
                 hydro[0].data = hydro[0].data * 1e4
@@ -125,15 +127,23 @@ def fetchAndConvert(files):
                 wavfilename = (filepath[:-12]+'wav').replace(':', '-')  # TODO Could be tmp filename
                 tsname = (filepath[:-12]+'ts').replace(':', '-')
                 hydro.write(wavfilename, framerate=sampling_rate, format='WAV')
-                os.system('ffmpeg -i {filename} -f mpegts -acodec aac {tsfilename}'.format(filename=wavfilename, tsfilename=tsname))
-                os.remove(wavfilename)
+                log.debug('converted wav')
+                # TODO fix this -ar to actually use sampling_rate
+                if os.path.exists(tsname):
+                        os.remove(tsname)
+                os.system('ffmpeg -i {filename} -f mpegts -ar 64000 -acodec aac {tsfilename}'.format(filename=wavfilename, tsfilename=tsname))
+                log.debug('made mpegts')
+                if os.path.exists(wavfilename):
+                        os.remove(wavfilename)
                 file['samplerate'] = sampling_rate
                 file['tsfilename'] = tsname
                 filesdone.append(filepath)
                 convertedfiles.append(file)
+                toconvert -= 1
+                log.debug(f'files to convert: {toconvert}')
     return(convertedfiles)
 
-def queueFiles(files:)
+def queueFiles(files):
     delay = timedelta(hours=DELAY)
     now = datetime.utcnow()
     played = 0
@@ -145,14 +155,16 @@ def queueFiles(files:)
         filepath = entry['filepath']
         if (delay + duration < age):  # in the past
             log.debug('deleting old entry: ' + tsfilename)
-            os.remove(tsfilename)
+            if os.path.exists(tsfilename):
+                    os.remove(tsfilename)
             filesdone.remove(filepath)
             del files[idx]
             deleted += 1
         if ((delay + duration >= age) and (age > delay)):
                 # should be playing next
             log.debug('playing : ' + tsfilename)
-            shutil.move(tsfilename, '/root/data/dummy.ts')
+            if os.path.exists(tsfilename):
+                    shutil.move(tsfilename, '/root/data/dummy.ts')
             played += 1
             filesdone.remove(filepath)
             del files[idx]
