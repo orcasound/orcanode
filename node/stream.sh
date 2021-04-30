@@ -61,8 +61,17 @@ elif [ $NODE_TYPE = "hls-only" ]; then
   	echo "Asking ffmpeg to stream only HLS segments at $STREAM_RATE Hz......" 
   	## Streaming HLS only via mpegts
 	nice -n -10 ffmpeg -f jack -i ffjack -f segment -segment_list "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac $CHANNELS -threads 3 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" &
+elif [ $NODE_TYPE = "dev-virt-s3" ]; then
+    SAMPLE_RATE=48000
+    STREAM_RATE=48000
+  echo "Sampling from $AUDIO_HW_ID at $SAMPLE_RATE Hz..."
+    echo "Asking ffmpeg to stream only HLS segments at $STREAM_RATE Hz......" 
+    ## Streaming HLS only via mpegts
+  nice -n -10 ffmpeg -re -fflags +genpts -stream_loop -1 -i "samples/haro-strait_2005.wav" \
+    -f segment -segment_list "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts \
+    -ar $STREAM_RATE -ac $CHANNELS -threads 3 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" &
 else
-        echo "unsupported please pick hls-only or research"
+        echo "unsupported please pick hls-only, research, or dev-virt-s3"
 fi
 
 # takes a second for ffmpeg to make ffjack connection before we can connect
