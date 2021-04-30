@@ -78,12 +78,15 @@ def getFileUrls():
     # TODO This only deals with a delay of 24 hours.  To generalize we need to 
     # divide delta by 24 to figure how the maximum number of days.
     datestr = (now - timedelta(hours=DELAY)).strftime('%Y/%m/%d')
+    log.debug("now-delay: " + datestr)
     datenowstr = (now).strftime('%Y/%m/%d')
+    log.debug("now: " + datenowstr)
     dates.append(datestr)
     if (datestr != datenowstr):
         dates.append(datenowstr)
     for datestr in dates:
         url = BASE_URL + '{}'.format(datestr)
+        log.debug("fetching: "+url)
         r = requests.get(url)
         if r == 'Response [404]':
                 # Day folder does not exist yet or website down
@@ -98,8 +101,8 @@ def fetchAndConvert(files):
     toconvert = 0
     now = datetime.utcnow()
     maxdelay = timedelta(hours=DELAY)
-    #    mindelay = maxdelay - timedelta(hours=SEGMENT)
-    mindelay = maxdelay - timedelta(minutes=10)
+    # mindelay = maxdelay - timedelta(hours=SEGMENT)
+    mindelay = maxdelay - timedelta(minutes=SEGMENT)
     for file in files:
         filepath = file['filepath']
         filetime = file['datetime']
