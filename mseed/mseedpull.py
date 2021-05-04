@@ -176,6 +176,7 @@ def queueFiles(files):
 
 
 def main_loop():
+    print("hello")
     starttime = time.time()
     convertedfiles = []
     files = []
