@@ -1,0 +1,26 @@
+version: "3"
+services:
+  streaming:
+    image: orcasound/orcanode:amd64
+    command: ./stream.sh
+    restart: always
+    env_file: .env
+    ports:
+      - "1234:1234"
+      - "8080:8080"
+    devices:
+      - "/dev/snd:/dev/snd"
+    privileged: true
+
+  logspout:
+    image: gliderlabs/logspout
+    command: ${SYSLOG_URL}
+    restart: always
+    hostname: ${NODE_NAME}
+    env_file: .env
+    environment:
+      - SYSLOG_HOSTNAME=${NODE_NAME}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8000:8000"
