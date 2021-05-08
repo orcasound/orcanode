@@ -1,5 +1,8 @@
 #!/bin/bash
 # Script for live DASH/HLS streaming lossy audio as AAC and/or archiving lossless audio as FLAC  
+if [ -z ${NODE_NAME+x} ]; then echo "NODE_NAME is unset"; else echo "node name is set to '$NODE_NAME'"; fi
+if [ -z ${NODE_LOOPBACK+x} ]; then echo "NODE_LOOPBACK is unset"; else echo "node loopback is set to '$NODE_LOOPBACK'"; fi
+
 
 # Get current timestamp
 timestamp=$(date +%s)
@@ -23,6 +26,11 @@ do
     echo "waiting for dummy.ts"
     sleep 30
 done
+
+if [ $NODE_LOOPBACK = "hls" ]; then
+    sleep 20
+    ffplay -nodisp /tmp/$NODE_NAME/hls/$timestamp/live.m3u8    
+fi
 
 echo "starting ffmpeg"
 

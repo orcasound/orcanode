@@ -4,6 +4,17 @@
 # Get current timestamp
 timestamp=$(date +%s)
 
+if [ -z ${NODE_NAME+x} ]; then echo "NODE_NAME is unset"; else echo "node name is set to '$NODE_NAME'"; fi
+if [ -z ${SAMPLE_RATE+x} ]; then echo "SAMPLE_RATE is unset"; else echo "sample rate is set to '$SAMPLE_RATE'"; fi
+if [ -z ${AUDIO_HW_ID+x} ]; then echo "AUDIO_HW_ID is unset"; else echo "sound card is set to '$AUDIO_HW_ID'"; fi
+if [ -z ${CHANNELS+x} ]; then echo "CHANNELS is unset"; else echo "Number of audio channels is set to '$CHANNELS'"; fi
+if [ -z ${NODE_TYPE+x} ]; then echo "NODE_TYPE is unset"; else echo "node type is set to '$NODE_TYPE'"; fi
+if [ -z ${STREAM_RATE+x} ]; then echo "STREAM_RATE is unset"; else echo "stream rate is set to '$STREAM_RATE'"; fi
+if [ -z ${SEGMENT_DURATION+x} ]; then echo "SEGMENT_DURATION is unset"; else echo "segment duration is set to '$SEGMENT_DURATION'"; fi
+if [ -z ${NODE_LOOPBACK+x} ]; then echo "NODE_LOOPBACK is unset"; else echo "node loopback is set to '$NODE_LOOPBACK'"; fi
+
+
+
 #### Set up local output directories
 mkdir -p /tmp/$NODE_NAME
 mkdir -p /tmp/$NODE_NAME/flac
@@ -82,6 +93,11 @@ jack_connect system:capture_2 ffjack:input_2
 if [ $NODE_LOOPBACK = "true" ]; then
     jack_connect system:capture_1 system:playback_1
     jack_connect system:capture_2 system:playback_2
+fi
+
+if [ $NODE_LOOPBACK = "hls" ]; then
+    sleep 20
+    ffplay -nodisp /tmp/$NODE_NAME/hls/$timestamp/live.m3u8    
 fi
 
 if [ $NODE_TYPE = "research" ]; then
