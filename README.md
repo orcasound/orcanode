@@ -34,7 +34,7 @@ SYSLOG_STRUCTURED_DATA='logdna@YourLogDNAnumber key="YourLogDNAKey" tag="docker"
 
 * NODE_NAME should indicate your device and it's location, ideally in the form `device_location` (e.g. we call our Raspberry Pi staging device in Seattle `rpi_seattle`. 
 * NODE_TYPE determines what audio data formats will be generated and transferred to their respective AWS buckets. 
-* AUDIO_HW_ID is the card, device providing the audio data. 
+* AUDIO_HW_ID is the card, device providing the audio data. Note: you can find your sound device by using the command "arecord -l".  It's preferred to use the logical name i.e. pisound, USB, etc, instead of the "0,0" or "1,0" format which can change on reboots. 
 * CHANNELS indicates the number of audio channels to expect (1 or 2). 
 * FLAC_DURATION is the amount of seconds you want in each archived lossless file. 
 * SEGMENT_DURATION is the amount of seconds you want in each streamed lossy segment.
