@@ -10,7 +10,7 @@ SYSLOG_URL=syslog+tls://syslog-a.logdna.com:YourLogDNAPort
 SYSLOG_STRUCTURED_DATA='logdna@YourLogDNAnumber key="YourLogDNAKey" tag="docker"
 ```
 
-You will need to add the following variables on to of your baseline .env to be able to pull and parse the mseed files.
+You will need to add the following variables to your baseline .env file to be able to pull and parse the mseed files.
 
 * STREAM_DELAY This is how many hours your stream will be delayed from the OOI websites, which are not updated in real time.
 * DELAY_SEGMENT This is how many hours will be buffered locally after your delay.
