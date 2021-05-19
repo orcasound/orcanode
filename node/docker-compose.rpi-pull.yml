@@ -1,8 +1,8 @@
 version: "3"
 services:
   streaming:
-    image: orcasound/orcanode
-    command: ./stream.sh
+    image: orcasound/orcanode:arm32v7
+    command: ./streamrpi.sh
     restart: always
     env_file: .env
     ports:
