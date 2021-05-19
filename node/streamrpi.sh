@@ -4,47 +4,14 @@
 # Exit immediately if any command exits with non zero status 
 set -e
 
-function fail {
-    printf '%s\n' "$1" >&2  ## Send message to stderr. Exclude >&2 if you don't want it that way.
-    printf "mandatory env variable not set, exiting now"  >&2 
-    exit "${2-1}"  ## Return a code specified by $2 or 1 by default.
-    }
-
-#
-# Check for all enviorment variables and fail if mandatory ones are not set
-#
-if [ -z ${NODE_NAME+x} ]; then fail "NODE_NAME is unset"; else echo "node name is set to '$NODE_NAME'"; fi
-if [ -z ${SAMPLE_RATE+x} ]; then fail "SAMPLE_RATE is unset"; else echo "sample rate is set to '$SAMPLE_RATE'"; fi
-if [ -z ${AUDIO_HW_ID+x} ]; then fail "AUDIO_HW_ID is unset"; else echo "sound card is set to '$AUDIO_HW_ID'"; fi
-if [ -z ${CHANNELS+x} ]; then fail "CHANNELS is unset"; else echo "Number of audio channels is set to '$CHANNELS'"; fi
-if [ -z ${NODE_TYPE+x} ]; then fail "NODE_TYPE is unset"; else echo "node type is set to '$NODE_TYPE'"; fi
-if [ -z ${STREAM_RATE+x} ]; then fail "STREAM_RATE is unset"; else echo "stream rate is set to '$STREAM_RATE'"; fi
-if [ -z ${SEGMENT_DURATION+x} ]; then fail "SEGMENT_DURATION is unset"; else echo "segment duration is set to '$SEGMENT_DURATION'"; fi 
-if [ -z ${NODE_ARCH+x} ]; then fail "NODE_ARCH is unset"; else echo "node architecture is set to '$NODE_ARCH'"; fi
-if [ -z ${NODE_LOOPBACK+x} ]; then echo "NODE_LOOPBACK is unset"; else echo "node loopback is set to '$NODE_LOOPBACK'"; fi
-
-# Get current timestamp
-timestamp=$(date +%s)
-
-
-#### Set up local output directories
-mkdir -p /tmp/$NODE_NAME
-mkdir -p /tmp/$NODE_NAME/flac
-mkdir -p /tmp/$NODE_NAME/hls
-mkdir -p /tmp/$NODE_NAME/hls/$timestamp
-#mkdir -p /tmp/$NODE_NAME/dash
-#mkdir -p /tmp/$NODE_NAME/dash/$timestamp
-#ln /tmp/$NODE_NAME/dash/$timestamp /tmp/dash_output_dir
-
-# Output timestamp for this (latest) stream
-echo $timestamp > /tmp/$NODE_NAME/latest.txt
+source ./streamsetup.sh
 
 #  Setup jack
-if [ $NODE_ARCH = "arm32v7" ]; then
+
 echo @audio - memlock 256000 >> /etc/security/limits.conf
 echo @audio - rtprio 75 >> /etc/security/limits.co
 JACK_NO_AUDIO_RESERVATION=1 jackd -t 2000 -P 75 -d alsa -d hw:$AUDIO_HW_ID -r $SAMPLE_RATE -p 1024 -n 10 -s &
-fi
+
    
 #### Generate stream segments and manifests, and/or lossless archive
 
@@ -77,14 +44,8 @@ elif [ $NODE_TYPE = "hls-only" ]; then
 	echo "Sampling $CHANNELS channels from $AUDIO_HW_ID at $SAMPLE_RATE Hz..."
   	echo "Asking ffmpeg to stream only HLS segments at $STREAM_RATE Hz......" 
   	## Streaming HLS only via mpegts
-	if [ $NODE_ARCH = "arm32v7" ]; then
-	## rpi, jack    
 	    nice -n -10 ffmpeg -f jack -i ffjack -f segment -segment_list "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac $CHANNELS -threads 3 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" &
-	else
-	    ## amd64 alsa
-	    	    nice -n -10 ffmpeg -f alsa -ac 2 -ar $SAMPLE_RATE -thread_queue_size 1024 -i hw:$AUDIO_HW_ID -f segment -segment_list "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac $CHANNELS -threads 3 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" &
-  
-        fi
+
 elif [ $NODE_TYPE = "dev-virt-s3" ]; then
     SAMPLE_RATE=48000
     STREAM_RATE=48000
@@ -100,11 +61,11 @@ fi
 
 # takes a second for ffmpeg to make ffjack connection before we can connect
 
-if [ $NODE_ARCH = "arm32v7" ]; then
-   sleep 3
-   jack_connect system:capture_1 ffjack:input_1
-   jack_connect system:capture_2 ffjack:input_2
-fi
+
+sleep 3
+jack_connect system:capture_1 ffjack:input_1
+jack_connect system:capture_2 ffjack:input_2
+
 
 if [ $NODE_LOOPBACK = "true" ]; then
    jack_connect system:capture_1 system:playback_1
