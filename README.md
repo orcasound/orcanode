@@ -1,6 +1,6 @@
-# Orcasound's orcanode
+# Orcasound's orcastream
 
-This software captures local audio data and streams it to AWS S3 buckets -- both as lossy (AAC-encoded) data in HLS segments for live-listening and as a lossless (FLAC-encoded) for archiving and/or acoustic analysis. There are branches for both arm32v7 and amd64 architectures, though the majority of initial development has been on the ARM-based Raspberry Pi. The current branches use ffmpeg+s3fs called by a bash script; an improved upload script is under development using ffmpeg+boto within a Python script, possibly with redis handling queueing.
+This software contains audio tools and scripts for capturing, reformatting, transcoding and uploading audio for Orcasound.  There is a base set of tools and a couple of specific projects, orcanode and orcamseed.  Orcanode is streaming using Intel (amd64) or Raspberry Pi (arm32v7) platforms using a soundcard.  While any soundcard should work, the most common one in use is the pisound board on either a Raspberry Pi 3B+ or 4.  The other project orcamseed is for converting mseed format data to be streamed on Orcanode.  This is mainly used for the [OOI](https://oceanobservatories.org/ "OOI") network.  See the README in each of those directories for more info.
 
 ## Background & motivation
 
@@ -22,18 +22,11 @@ An ARM or X86 device with a sound card (or other audio input devices) connected 
 
 ### Installing
 
-Choose the branch that is appropriate for your architecture. Clone that branch and create an .env file that contains the following:
+Create a base docker image for your architecture by running the script in /base/rpi or /base/amd64 as appropriate.  You will need to create a .env file as appropriate for your projects.  Common to to all projects are the need for AWS keys
 
 ```
 AWSACCESSKEYID=YourAWSaccessKey
 AWSSECRETACCESSKEY=YourAWSsecretAccessKey
-
-NODE_NAME=YourNodeName
-NODE_TYPE=hls-only
-AUDIO_HW_ID=1,0
-CHANNELS=2
-FLAC_DURATION=30
-SEGMENT_DURATION=10 
  
 SYSLOG_URL=syslog+tls://syslog-a.logdna.com:YourLogDNAPort
 SYSLOG_STRUCTURED_DATA='logdna@YourLogDNAnumber key="YourLogDNAKey" tag="docker"
@@ -41,14 +34,14 @@ SYSLOG_STRUCTURED_DATA='logdna@YourLogDNAnumber key="YourLogDNAKey" tag="docker"
 
 * NODE_NAME should indicate your device and it's location, ideally in the form `device_location` (e.g. we call our Raspberry Pi staging device in Seattle `rpi_seattle`. 
 * NODE_TYPE determines what audio data formats will be generated and transferred to their respective AWS buckets. 
-* AUDIO_HW_ID is the card, device providing the audio data. 
+* AUDIO_HW_ID is the card, device providing the audio data. Note: you can find your sound device by using the command "arecord -l".  It's preferred to use the logical name i.e. pisound, USB, etc, instead of the "0,0" or "1,0" format which can change on reboots. 
 * CHANNELS indicates the number of audio channels to expect (1 or 2). 
 * FLAC_DURATION is the amount of seconds you want in each archived lossless file. 
 * SEGMENT_DURATION is the amount of seconds you want in each streamed lossy segment.
 
 ## Running local tests
 
-In the repository directory (where you also put your .env file) run `docker-compose up -d`. Watch what happens using `htop`. If you want to verify files are being written to /tmp or /mnt directories, get the name of your streaming service using `docker-compose ps` (in this case `orcanode_streaming_1`) and then do `docker exec -it orcanode_streaming_1 /bin/bash` to get a bash shell within the running container.
+In the repository directory (where you also put your .env file) first copy the compose file you want to docker-compose.yml.  For example if you are raspberry pi and you want to use the prebuilt image then copy docker-compose.rpi-pull.yml to docker-compose.  Then run `docker-compose up -d`. Watch what happens using `htop`. If you want to verify files are being written to /tmp or /mnt directories, get the name of your streaming service using `docker-compose ps` (in this case `orcanode_streaming_1`) and then do `docker exec -it orcanode_streaming_1 /bin/bash` to get a bash shell within the running container.
 
 ### Running an end-to-end test
 
