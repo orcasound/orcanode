@@ -22,7 +22,25 @@ An ARM or X86 device with a sound card (or other audio input devices) connected 
 
 ### Installing
 
-Create a base docker image for your architecture by running the script in /base/rpi or /base/amd64 as appropriate.  You will need to create a .env file as appropriate for your projects.  Common to to all projects are the need for AWS keys
+Create a base docker image for your architecture by running the script in /base/rpi or /base/amd64 as appropriate.  You will need to create a .env file as appropriate for your projects.  Here is an example of an .env file (tested/working as of June, 2021) without the keys that are common to all Orcasound projects:
+
+```
+AWS_METADATA_SERVICE_TIMEOUT=5
+AWS_METADATA_SERVICE_NUM_ATTEMPTS=0
+REGION=us-west-2
+BUCKET_TYPE=dev
+NODE_TYPE=hls-only
+NODE_NAME=rpi_YOURNODENAME_test
+NODE_LOOPBACK=true
+SAMPLE_RATE=48000
+AUDIO_HW_ID=pisound
+CHANNELS=1
+FLAC_DURATION=30
+SEGMENT_DURATION=10
+LC_ALL=C.UTF-8
+```
+
+except that the following fields are excised and will be need added if you are integrating with the audio and logging data streaming systems of Orcasound. (You can request keys via the #hydrophone-nodes channel in the Orcasound Slack. As of June, 2021, we are continuing to use AWS S3 for storage and LogDNA for live-logging and troubleshooting.)
 
 ```
 AWSACCESSKEYID=YourAWSaccessKey
@@ -32,12 +50,16 @@ SYSLOG_URL=syslog+tls://syslog-a.logdna.com:YourLogDNAPort
 SYSLOG_STRUCTURED_DATA='logdna@YourLogDNAnumber key="YourLogDNAKey" tag="docker"
 ```
 
+Here are explanations of some of the .env fields:
+
 * NODE_NAME should indicate your device and it's location, ideally in the form `device_location` (e.g. we call our Raspberry Pi staging device in Seattle `rpi_seattle`. 
 * NODE_TYPE determines what audio data formats will be generated and transferred to their respective AWS buckets. 
 * AUDIO_HW_ID is the card, device providing the audio data. Note: you can find your sound device by using the command "arecord -l".  It's preferred to use the logical name i.e. pisound, USB, etc, instead of the "0,0" or "1,0" format which can change on reboots. 
 * CHANNELS indicates the number of audio channels to expect (1 or 2). 
 * FLAC_DURATION is the amount of seconds you want in each archived lossless file. 
 * SEGMENT_DURATION is the amount of seconds you want in each streamed lossy segment.
+
+
 
 ## Running local tests
 
