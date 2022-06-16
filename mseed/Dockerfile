@@ -5,7 +5,7 @@
 # multiarch manifest: https://github.com/moby/moby/issues/34875
 # When this is fixed, this can be changed to just `FROM debian:stretch-slim`
 FROM orcastream/orcabase:latest
-# MAINTAINER Orcasound <orcanode-devs@orcasound.net>
+MAINTAINER Orcasound <orcanode-devs@orcasound.net>
 
 RUN pip3 install numpy
 RUN pip3 install obspy

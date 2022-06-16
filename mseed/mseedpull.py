@@ -27,7 +27,7 @@ import logging.handlers
 import sys
 
 DELAY = int(os.environ["STREAM_DELAY"])
-#DELAY = 6.5
+# DELAY = 6.5
 SEGMENT = int(os.environ["DELAY_SEGMENT"]) # maybe change to "buffer"
 # SEGMENT = 1
 # TODO Should put this in env variable
@@ -85,14 +85,25 @@ def getFileUrls():
     if (datestr != datenowstr):
         dates.append(datenowstr)
     for datestr in dates:
+        r = None
         url = BASE_URL + '{}'.format(datestr)
         log.debug("fetching: "+url)
-        r = requests.get(url)
-        if r == 'Response [404]':
-                # Day folder does not exist yet or website down
+        try:
+            r = requests.get(url)
+        except (OSError):
+            print('OS error. Please check Internet connection.')
+            time.sleep(10)
+        except:
+            log.debug("Unexpected error to get url.")
+            time.sleep(10)
+        # If url is none, skip the following operations:
+        if r is None:
+            continue
+        elif r == 'Response [404]':
             print("website not responding or file not posted")
-        parser = MyHTMLParser()
-        parser.feed(str(r.content))
+        else:
+            parser = MyHTMLParser()
+            parser.feed(str(r.content))
     return filelist
 
 
@@ -111,6 +122,22 @@ def fetchAndConvert(files):
             if (filedelay < maxdelay and filedelay > mindelay):
                 toconvert += 1
     log.debug(f'files to convert: {toconvert}')
+
+    # If no file to convert, capture the next available file time:
+    if(toconvert == 0):
+        nextAvailable = None
+        for file in files:
+            filetime = file['datetime']
+            filedelay = now - filetime
+            if (filedelay < maxdelay):
+                nextAvailable = filetime
+                break
+        if(nextAvailable):
+            time_to_wait_for_next = filetime - (now - mindelay)
+            print('The next available filetime: ' + str(filetime) + '; Time delta: ' + str(time_to_wait_for_next))
+        else:
+            print('The next available file is cuurently unavailable.')
+    
     for file in files:
         filetime = file['datetime']
         url = file['url']
@@ -159,15 +186,15 @@ def queueFiles(files):
         if (delay + duration < age):  # in the past
             log.debug('deleting old entry: ' + tsfilename)
             if os.path.exists(tsfilename):
-                    os.remove(tsfilename)
+                os.remove(tsfilename)
             filesdone.remove(filepath)
             del files[idx]
             deleted += 1
         if ((delay + duration >= age) and (age > delay)):
-                # should be playing next
+            # should be playing next
             log.debug('playing : ' + tsfilename)
             if os.path.exists(tsfilename):
-                    shutil.move(tsfilename, '/root/data/dummy.ts')
+                shutil.move(tsfilename, '/root/data/dummy.ts')
             played += 1
             filesdone.remove(filepath)
             del files[idx]
@@ -181,16 +208,32 @@ def main_loop():
     files = []
     while True:
         # TODO this converts correctly but after queue files it
-        # get overwritten by fetchandconvert
+        # get overwritten by fetchandconver
         # you need to change it fetchandconvert appends the exisitng list
-        # and all timedate stamps are only converted once at most.    
-        log.debug("checking")
-        files = getFileUrls()
-        log.debug(f'number of URLS: {len(files)}')
-        convertedfiles.extend(fetchAndConvert(files))
-        log.debug(f'number of converted files: {len(files)}')
-        played, deleted, convertedfiles = queueFiles(convertedfiles)
-        log.debug(f'played: {played}, deleted: {deleted}')
+        # and all timedate stamps are only converted once at most.
+        for i in range(0, 5):
+            print("Call getFileUrls(). Attempt #" + str(i+1) + " out of 5.")
+            files = getFileUrls()
+            if len(files) > 0:
+                log.debug(f'number of URLS: {len(files)}')
+                for i in range(0, 3):
+                    print("Call fetchAndConvert(files). Attempt "+str(i+1) + " out of 3")
+                    try:
+                        convertedfiles.extend(fetchAndConvert(files))
+                    except (OSError):
+                        print('OS error. Please check Internet connection.')
+                        time.sleep(10)
+                    except:
+                        logging.exception("Unexpected error to convert files.")
+                        time.sleep(10)
+                log.debug(f'number of converted files: {len(files)}')
+                played, deleted, convertedfiles = queueFiles(convertedfiles)
+                log.debug(f'played: {played}, deleted: {deleted}')
+                break
+            else:
+                print("Unable to get file urls.")
+                time.sleep(10)
+        print("The next call will start in 2.5 minutes.")
         time.sleep(150.0 - ((time.time() - starttime) % 150.0))
 
 

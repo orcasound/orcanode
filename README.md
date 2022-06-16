@@ -1,6 +1,6 @@
 # Orcasound's orcastream
 
-This software contains audio tools and scripts for capturing, reformatting, transcoding and uploading audio for Orcasound.  The directory structure reflects that we have developed a **base** set of tools and a couple of specific projects, orcanode and orcamseed (in the node and mseed directories).  Orcasound hydrophone nodes stream by running the **node** code on Intel (amd64) or [Raspberry Pi](https://www.raspberrypi.org/) (arm32v7) platforms using a soundcard.  While any soundcard should work, the most common one in use is the [Pisound](https://blokas.io/pisound/) board on either a Raspberry Pi 3B+ or 4.  The other project (in the **mseed** directory) is for converting mseed format data to be streamed via Orcanode through the Orcasound human & machine detection pipeline.  This is mainly used for streaming audio data from the [OOI](https://oceanobservatories.org/ "OOI") (NSF-funded Ocean Observatory Initiative) hydrophones off the coast of Oregon.  See the README in each of those directories for more info.
+This software contains audio tools and scripts for capturing, reformatting, transcoding and uploading audio for Orcasound.  There is a base set of tools and a couple of specific projects, orcanode and orcamseed.  Orcanode is streaming using Intel (amd64) or Raspberry Pi (arm32v7) platforms using a soundcard.  While any soundcard should work, the most common one in use is the pisound board on either a Raspberry Pi 3B+ or 4.  The other project orcamseed is for converting mseed format data to be streamed on Orcanode.  This is mainly used for the [OOI](https://oceanobservatories.org/ "OOI") network.  See the README in each of those directories for more info.
 
 ## Background & motivation
 
@@ -22,25 +22,7 @@ An ARM or X86 device with a sound card (or other audio input devices) connected 
 
 ### Installing
 
-Create a base docker image for your architecture by running the script in /base/rpi or /base/amd64 as appropriate.  You will need to create a .env file as appropriate for your projects.  Here is an example of an .env file (tested/working as of June, 2021)...
-
-```
-AWS_METADATA_SERVICE_TIMEOUT=5
-AWS_METADATA_SERVICE_NUM_ATTEMPTS=0
-REGION=us-west-2
-BUCKET_TYPE=dev
-NODE_TYPE=hls-only
-NODE_NAME=rpi_YOURNODENAME_test
-NODE_LOOPBACK=true
-SAMPLE_RATE=48000
-AUDIO_HW_ID=pisound
-CHANNELS=1
-FLAC_DURATION=30
-SEGMENT_DURATION=10
-LC_ALL=C.UTF-8
-```
-
-... except that the following fields are excised and will need to be added if you are integrating with the audio and logging systems of Orcasound: 
+Create a base docker image for your architecture by running the script in /base/rpi or /base/amd64 as appropriate.  You will need to create a .env file as appropriate for your projects.  Common to to all projects are the need for AWS keys
 
 ```
 AWSACCESSKEYID=YourAWSaccessKey
@@ -56,15 +38,39 @@ Here are explanations of some of the .env fields:
 
 * NODE_NAME should indicate your device and it's location, ideally in the form `device_location` (e.g. we call our Raspberry Pi staging device in Seattle `rpi_seattle`. 
 * NODE_TYPE determines what audio data formats will be generated and transferred to their respective AWS buckets. 
-* AUDIO_HW_ID is the card, device providing the audio data. Note: you can find your sound device by using the command "arecord -l".  It's preferred to use the logical name i.e. pisound, USB, etc, instead of the "0,0" or "1,0" format which can change on reboots. 
+* AUDIO_HW_ID is the card, device providing the audio data. Note: you can find your sound device by using the command "arecord -l".  For Raspberry Pi hardware with pisound just use AUDIO_HW_ID=pisound
 * CHANNELS indicates the number of audio channels to expect (1 or 2). 
 * FLAC_DURATION is the amount of seconds you want in each archived lossless file. 
 * SEGMENT_DURATION is the amount of seconds you want in each streamed lossy segment.
 
 
+## Supported combinations
+
+
+| NODE ARCHITECTURE | node | mseed |
+|-------------------|------|-------|
+| arm32v7           |  Y   |  N    |
+| amd64             |  Y   |  Y    |
+
+
+
+| NODE ARCHITECTURE | hls-only | research | dev-virt |
+|-------------------|----------|----------|----------|
+| arm32v7           | Y        | Y        | N        |
+| amd64             | Y        | N        | Y        |
+
+
+
+| NODE Hardware     | hls-only | research |
+|-------------------|----------|----------|
+| RPI4              | Y        | Y        |
+| RPI3 B-           | Y        | N        |
+
+
+
 ## Running local tests
 
-At the root of the repository directory (where you also put your .env file) first copy the compose file you want to `docker-compose.yml`.  For example, if you have a Raspberry Pi and you want to use the prebuilt image, then copy `docker-compose.rpi-pull.yml` to `docker-compose.yml`.  Then run `docker-compose up -d`. Watch what happens using `htop`. If you want to verify files are being written to /tmp or /mnt directories, get the name of your streaming service using `docker-compose ps` (in this case `orcanode_streaming_1`) and then do `docker exec -it orcanode_streaming_1 /bin/bash` to get a bash shell within the running container.
+In the repository directory (where you also put your .env file) first copy the compose file you want to docker-compose.yml.  For example if you are raspberry pi and you want to use the prebuilt image then copy docker-compose.rpi-pull.yml to docker-compose.  Then run `docker-compose up -d`. Watch what happens using `htop`. If you want to verify files are being written to /tmp or /mnt directories, get the name of your streaming service using `docker-compose ps` (in this case `orcanode_streaming_1`) and then do `docker exec -it orcanode_streaming_1 /bin/bash` to get a bash shell within the running container.
 
 ### Running an end-to-end test
 
