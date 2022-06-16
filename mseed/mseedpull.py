@@ -27,7 +27,7 @@ import logging.handlers
 import sys
 
 DELAY = int(os.environ["STREAM_DELAY"])
-# DELAY = 6.5
+#DELAY = 6.5
 SEGMENT = int(os.environ["DELAY_SEGMENT"]) # maybe change to "buffer"
 # SEGMENT = 1
 # TODO Should put this in env variable
@@ -181,7 +181,7 @@ def main_loop():
     files = []
     while True:
         # TODO this converts correctly but after queue files it
-        # get overwritten by fetchandconver
+        # get overwritten by fetchandconvert
         # you need to change it fetchandconvert appends the exisitng list
         # and all timedate stamps are only converted once at most.    
         log.debug("checking")

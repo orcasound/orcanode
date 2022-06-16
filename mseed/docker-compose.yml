@@ -3,8 +3,8 @@ services:
   pull:
     image: orcastream/orcamseed
     build: ./
-    # command: tail -F README.md
-    command: python3 mseedpull.py
+    command: tail -F README.md
+    #command: python3 mseedpull.py
     restart: always
     env_file: .env
     volumes:
@@ -12,25 +12,25 @@ services:
   stream:
     image: orcastream/orcamseed
     build: ./
-    # command: tail -F README.md
-    command: ./streamfiles.sh
+    command: tail -F README.md
+    # command: ./streamfiles.sh
     restart: always
     env_file: .env
     volumes:
       - data:/root/data
     privileged: true
-  logspout:
-    image: gliderlabs/logspout
-    command: ${SYSLOG_URL}
-    restart: always
-    hostname: ${NODE_NAME}
-    env_file: .env
-    environment:
-      - SYSLOG_HOSTNAME=${NODE_NAME}
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    ports:
-      - "8000:8000"
+  # logspout:
+  #   image: gliderlabs/logspout
+  #   command: ${SYSLOG_URL}
+  #   restart: always
+  #   hostname: ${NODE_NAME}
+  #   env_file: .env
+  #   environment:
+  #     - SYSLOG_HOSTNAME=${NODE_NAME}
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #   ports:
+  #     - "8000:8000"
 
 
 volumes:
