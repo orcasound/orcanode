@@ -44,13 +44,15 @@ def fetchData(start_time, segment_length, end_time, node):
         wav_name = f"{datestr}.wav"
         hydrophone_data.wav_write(wav_name)   
         ts_name = f"{datestr}.ts"
-        with open("files.txt", "w") as f:
-            f.write('file ' + "'.." + file_path + "/" + ts_name + "'" +  "\n")
-        os.system('ffmpeg -i {wavfile} -f mpegts -ar 64000 -acodec aac -ac 1 {tsfile}'.format(wavfile=wav_name, tsfile=ts_name))
-        os.system("ffmpeg -f concat -safe 0 -i files.txt -flush_packets 0 -f segment -segment_list '/tmp/$NODE/hls/$sub_directory/live.m3u8'")
+        #os.system('ffmpeg -i {wavfile} -f mpegts -ar 64000 -acodec aac -ac 1 {tsfile}'.format(wavfile=wav_name, tsfile=ts_name))
+        #os.system("ffmpeg -f concat -safe 0 -i files.txt -flush_packets 0 -f segment -segment_list '/tmp/$NODE/hls/$sub_directory/live.m3u8'")
+        os.system("ffmpeg -i {wavfile} -f segment -segment_list './live.m3u8' -strftime 1 -segment_time 10 -segment_format mpegts -ac 1 -acodec aac {tsfile}".format(wavfile=wav_name, tsfile=ts_name))
         if not os.path.exists(file_path):
            os.makedirs(file_path)
         shutil.move(ts_name, file_path)
+        if not os.path.exists(os.path.join(file_path, 'live.m3u8')):
+            shutil.move('/root/live.m3u8', file_path)
+        shutil.copy('/root/live.m3u8', file_path)
         os.remove(wav_name)
         start_time = segment_end
 
