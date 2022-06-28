@@ -4,17 +4,17 @@ This software contains audio tools and scripts for capturing, reformatting, tran
 
 ## Background & motivation
 
-This code was developed for source nodes on the [Orcasound](http://orcasound.net) hydrophone network (WA, USA) -- thus the repository names! Our primary motivation is to make it easy for lots of folks to listen for whales using their favorite device/OS/browser. 
+This code was developed for source nodes on the [Orcasound](http://orcasound.net) hydrophone network (WA, USA) -- thus the repository names begin with "orca"! Our primary motivation is to make it easy for lots of folks to listen for whales using their favorite device/OS/browser. 
 
-We also aspire to use open-source software as much as possible. A long-term goal is to stream lossless FLAC-encoded data within DASH segments to a player that works optimally on as many listening devices as possible.
+We also aspire to use open source software as much as possible. We rely heavily on [FFmpeg](https://www.ffmpeg.org/). One of our long-term goals is to stream lossless FLAC-encoded data within DASH segments to a player that works optimally on as many listening devices as possible.
 
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See the deployment section (below) for notes on how to deploy the project on a live system like [live.orcasound.net](https://live.orcasound.net).
 
 If you want to set up your hardware to host a hydrophone within the Orcasound network, take a look at [how to join Orcasound](http://www.orcasound.net/join/) and [our prototype built from a Raspberry Pi3b with the Pisound Hat](http://www.orcasound.net/2018/04/27/orcasounds-new-live-audio-solution-from-hydrophone-to-headphone-with-a-raspberry-pi-computer-and-hls-dash-streaming-software/).
 
-Audio data is acquired within a Docker container by ALSA/FFmpeg, written to /tmp directories, transferred to /mnt directories by rsync, and transferred to AWS S3 buckets by s3fs. Errors/etc are logged to LogDNA via a separate Docker container.
+The general scheme is to acquire audio data from a sound card within a Docker container via ALSA or Jack and FFmpeg, and then stream the audio data with minimal latency to cloud-based storage (as of Oct 2021, we use AWS S3 buckets). Errors/etc are logged to LogDNA via a separate Docker container.
 
 ### Prerequisites
 
@@ -31,6 +31,10 @@ AWSSECRETACCESSKEY=YourAWSsecretAccessKey
 SYSLOG_URL=syslog+tls://syslog-a.logdna.com:YourLogDNAPort
 SYSLOG_STRUCTURED_DATA='logdna@YourLogDNAnumber key="YourLogDNAKey" tag="docker"
 ```
+
+(You can request keys via the #hydrophone-nodes channel in the Orcasound Slack. As of October, 2021, we are continuing to use AWS S3 for storage and LogDNA for live-logging and troubleshooting.)
+
+Here are explanations of some of the .env fields:
 
 * NODE_NAME should indicate your device and it's location, ideally in the form `device_location` (e.g. we call our Raspberry Pi staging device in Seattle `rpi_seattle`. 
 * NODE_TYPE determines what audio data formats will be generated and transferred to their respective AWS buckets. 
@@ -70,24 +74,26 @@ In the repository directory (where you also put your .env file) first copy the c
 
 ### Running an end-to-end test
 
-Once you've verified files are making it to your S3 bucket (with public read access), you can test the stream using a browser-based reference player.  For example, with [Bitmovin HLS/MPEG/DASH player] you can use the drop-down menu to select HLS and then paste the URL for your current S3-based m3u8 manifest file into it to listen to the stream.
+Once you've verified files are making it to your S3 bucket (with public read access), you can test the stream using a browser-based reference player.  For example, with [Bitmovin HLS/MPEG/DASH player](https://bitmovin.com/demos/stream-test?format=hls&manifest=) you can use select HLS and then paste the URL for your current S3-based manifest (`.m3u8` file) to listen to the stream (and observe buffer levels and bitrate in real-time).
 
 Your URL should look something like this:
 ```
 https://s3-us-west-2.amazonaws.com/dev-streaming-orcasound-net/rpi_seattle/hls/1526661120/live.m3u8
 ```
-For end-to-end tests of Orcasound nodes, this schematic describes how sources map to the .dev, .beta, and .live subdomains of orcasound.net --
+For end-to-end tests of Orcasound nodes, this schematic describes how sources map to the `dev`, `beta`, and `live` subdomains of orcasound.net --
 
 ![Schematic of Orcasound source-subdomain mapping](http://orcasound.net/img/orcasound-app/Orcasound-software-evolution-model.png "Orcasound software evolution model")
 
 -- and you can monitor your development stream via the web-app using this URL structure:
 
-```dev.orcasound.net/dynamic/node_name``` so for node_name = rpi_orcasound_lab the test URL would be [dev.orcasound.net/dynamic/rpi_orcasound_lab](http://dev.orcasound.net/dynamic/rpi_orcasound_lab).
+```dev.orcasound.net/dynamic/node_name``` 
+
+For example, with node_name = rpi_orcasound_lab the test URL would be [dev.orcasound.net/dynamic/rpi_orcasound_lab](http://dev.orcasound.net/dynamic/rpi_orcasound_lab).
 
 
 ## Deployment
 
-If you would like to add a node to the Orcasound hydrophone network, contact Scott for guidance on how to participate.
+If you would like to add a node to the Orcasound hydrophone network, contact admin@orcasound.net for guidance on how to participate.
 
 ## Built With
 
@@ -97,16 +103,16 @@ If you would like to add a node to the Orcasound hydrophone network, contact Sco
 
 ## Contributing
 
-Please read [CONTRIBUTING.md](https://github.com/orcasound/orcanode/blob/master/CONTRIBUTING) for details on our code of conduct, and the process for submitting pull requests to us.
+Please read [CONTRIBUTING.md](https://github.com/orcasound/orcanode/blob/master/CONTRIBUTING) for details on our code of conduct, and the process for submitting pull requests.
 
 ## Authors
 
+* **Steve Hicks** - *Raspberry Pi expert* - [Steve on Github](https://github.com/mcshicks)
 * **Paul Cretu** - *Lead developer* - [Paul on Github](https://github.com/paulcretu)
 * **Scott Veirs** - *Project manager* - [Scott on Github](https://github.com/scottveirs)
-* **Steve Hicks** - *Raspberry Pi expert* - [Steve on Github](https://github.com/mcshicks)
 * **Val Veirs** - *Hydrophone expert* - [Val on Github](https://github.com/veirs)
 
-See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
+See also the list of [orcanode contributors](https://github.com/orcasound/orcanode/graphs/contributors) who have helped this project and the [Orcasound Hacker Hall of Fame] who have advanced both Orcasound open source code and the hydrophone network in the habitat of the endangered Southern Resident killer whales.
 
 ## License
 
@@ -114,6 +120,6 @@ This project is licensed under the GNU Affero General Public License v3.0 - see 
 
 ## Acknowledgments
 
-* Thanks to the backers of the 2017 Kickstarter that funded the development of this open-source code.
+* Thanks to the backers of the 2017 Kickstarter that funded the development of this open source code.
 * Thanks to the makers of the Raspberry Pi and the Pisound HAT.
 * Thanks to the many friends and backers who helped improve maintain nodes and improve the [Orcasound app](https://github.com/orcasound/orcasite).

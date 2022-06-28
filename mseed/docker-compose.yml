@@ -12,7 +12,7 @@ services:
   stream:
     image: orcastream/orcamseed
     build: ./
-    command: tail -F README.md
+    # command: tail -F README.md
     command: ./streamfiles.sh
     restart: always
     env_file: .env
