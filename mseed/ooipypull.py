@@ -49,12 +49,14 @@ def fetchData(start_time, segment_length, end_time, node):
         os.system("ffmpeg -i {wavfile} -f segment -segment_list './live.m3u8' -strftime 1 -segment_time 10 -segment_format mpegts -ac 1 -acodec aac {tsfile}".format(wavfile=wav_name, tsfile=ts_name))
         if not os.path.exists(file_path):
            os.makedirs(file_path)
-        shutil.move(ts_name, file_path)
-        if not os.path.exists(os.path.join(file_path, 'live.m3u8')):
-            shutil.move('/root/live.m3u8', file_path)
+        shutil.move(os.path.join('/root', ts_name), os.path.join(file_path, ts_name))
         shutil.copy('/root/live.m3u8', file_path)
         os.remove(wav_name)
         start_time = segment_end
+
+    with open('latest.txt', 'w') as f:
+        f.write(sub_directory)
+    shutil.copy('/root/latest.txt', BASEPATH) 
 
 def _main():
 
