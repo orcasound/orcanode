@@ -61,6 +61,7 @@ def fetchData(start_time, segment_length, end_time, node):
     shutil.copy('/root/latest.txt', BASEPATH) 
 
 
+
 def _main():
 
     segment_length = datetime.timedelta(seconds = 10)
