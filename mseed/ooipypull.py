@@ -40,6 +40,9 @@ def fetchData(start_time, segment_length, end_time, node):
         #create directory and edit latest.txt
         if not os.path.exists(file_path):
             os.mkdir(file_path)
+            manifest_file = os.path.join('/root', 'live.m3u8')           
+            if os.path.exists(manifest_file):
+                os.remove(manifest_file)
             if not os.path.exists(os.path.join(BASEPATH, 'latest.txt')):
                 with open('latest.txt', 'x') as f:
                     f.write(sub_directory)
@@ -78,9 +81,15 @@ def writeManifest(wav_name, ts_name):
         os.system("ffmpeg -i {wavfile} -f segment -segment_list 'live.m3u8' -strftime 1 -segment_time 300 -segment_format mpegts -ac 1 -acodec aac {tsfile}".format(wavfile=wav_name, tsfile=ts_name))
     else:
         os.system('ffmpeg -i {wavfile} -f mpegts -ar 64000 -acodec aac -ac 1 {tsfile}'.format(wavfile=wav_name, tsfile=ts_name))
-        with open("live.m3u8", "a") as f:
-            f.write("#EXTINF:300 \n")
+        #remove EXT-X-ENDLIST and write new segment
+        with open("live.m3u8", "r+") as f:
+            lines = f.readlines()
+            f.seek(0)
+            f.truncate()
+            f.writelines(lines[:-1])
+            f.write("#EXTINF:300.000000, \n")
             f.write(f'{ts_name} \n')
+            f.write(f'#EXT-X-ENDLIST \n')
 
         #os.system("ffmpeg -i {wavfile} -hls_playlist_type event -strftime 1 -hls_segment_type mpegts -ac 1 -acodec aac -hls_segment_filename {tsfile} -hls_time 1800 -hls_flags omit_endlist+append_list live.m3u8".format(wavfile=wav_name, tsfile=ts_name))      
 
