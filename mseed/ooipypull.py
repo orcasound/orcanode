@@ -10,9 +10,10 @@ LOGLEVEL = logging.DEBUG
 PREFIX = os.environ["TIME_PREFIX"]
 DELAY = os.environ["DELAY_SEGMENT"]
 NODE = os.environ["NODE_NAME"]
+ENV = os.environ["ENV"]
+
 BASEPATH = os.path.join('/tmp', NODE)
 PATH = os.path.join(BASEPATH, 'hls')
-
 log = logging.getLogger(__name__)
 
 log.setLevel(LOGLEVEL)
@@ -55,6 +56,7 @@ def fetchData(start_time, segment_length, end_time, node):
         #fetch if file doesn't already exist
         if(os.path.exists(os.path.join(file_path, ts_name))):
             print("EXISTS")
+            start_time = segment_end
             continue
         hydrophone_data = ooipy.request.hydrophone_request.get_acoustic_data(
             start_time, segment_end, node, verbose=True, data_gap_mode=2
@@ -100,7 +102,7 @@ def _main():
     segment_length = datetime.timedelta(minutes = 5)
     fixed_delay = datetime.timedelta(hours=8)
 
-    while True:
+    if ENV == "live":
         end_time = datetime.datetime.utcnow()
         start_time = end_time - datetime.timedelta(hours=8)
 
@@ -111,6 +113,17 @@ def _main():
         fetchData(end_time-datetime.timedelta(hours=24), segment_length, end_time, 'PC01A')
 
         start_time, end_time = end_time, datetime.datetime.utcnow()
+    
+    elif ENV == "test":
+        end_time = datetime.datetime(2021, 4, 28)
+        start_time = datetime.datetime(2021, 4, 27)
+
+        #manual testing
+        fetchData(start_time, segment_length, end_time, 'PC01A')
+
+    else:
+        print("Please provide a valid fetch environment: live or test.")
+
 
 
 

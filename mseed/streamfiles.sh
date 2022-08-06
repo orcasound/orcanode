@@ -5,7 +5,7 @@ if [ -z ${NODE_LOOPBACK+x} ]; then echo "NODE_LOOPBACK is unset"; else echo "nod
 
 
 # Get current timestamp
-timestamp=$(date +%s)
+timestamp=$(date '+%Y-%m-%d')
 
 #### Set up local output directories
 mkdir -p /tmp/$NODE_NAME
