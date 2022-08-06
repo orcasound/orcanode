@@ -23,6 +23,10 @@ import boto3
 import os
 import sys
 
+# AWS access key and secret
+ACCESS_ID = os.environ["AWSACCESSKEYID"]
+ACCESS_KEY = os.environ["AWSSECRETACCESSKEY"]
+
 NODE = os.environ["NODE_NAME"]
 BASEPATH = os.path.join("/tmp", NODE)
 PATH = os.path.join(BASEPATH, "hls")
@@ -63,7 +67,7 @@ if "BUCKET_TYPE" in os.environ:
 def s3_copy_file(path, filename):
     log.debug('uploading file '+filename+' from '+path+' to bucket '+BUCKET)
     try:
-        resource = boto3.resource('s3', REGION)   # Doesn't seem like we have to specify region
+        resource = boto3.resource('s3', aws_access_key_id=ACCESS_ID, aws_secret_access_key= ACCESS_KEY)  
         # transfer = S3Transfer(client)
         uploadfile = os.path.join(path, filename)
         log.debug('upload file: ' + uploadfile)

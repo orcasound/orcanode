@@ -9,6 +9,7 @@ MAINTAINER Orcasound <orcanode-devs@orcasound.net>
 
 RUN pip3 install numpy
 RUN pip3 install obspy
+RUN pip3 install ooipy
 
 ############################### Copy files #####################################
 

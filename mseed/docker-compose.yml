@@ -1,37 +1,26 @@
 version: "3"
 services:
-  pull:
+  fetch:
     image: orcastream/orcamseed
     build: ./
-    # command: tail -F README.md
-    command: python3 mseedpull.py
+    command: python3 ooipypull.py
     restart: always
     env_file: .env
     volumes:
-      - data:/root/data
-  stream:
-    image: orcastream/orcamseed
-    build: ./
-    # command: tail -F README.md
-    command: ./streamfiles.sh
-    restart: always
-    env_file: .env
-    volumes:
-      - data:/root/data
-    privileged: true
-  logspout:
-    image: gliderlabs/logspout
-    command: ${SYSLOG_URL}
-    restart: always
-    hostname: ${NODE_NAME}
-    env_file: .env
-    environment:
-      - SYSLOG_HOSTNAME=${NODE_NAME}
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    ports:
-      - "8000:8000"
+      - data:/tmp
+    depends_on:
+      - upload
 
+  upload:
+    image: orcastream/orcamseed
+    build: ./
+    command: tail -F README.md
+    restart: always
+    env_file: .env
+    volumes:
+      - data:/tmp
+    privileged: true
+  
 
 volumes:
   data:
