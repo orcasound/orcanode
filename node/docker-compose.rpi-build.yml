@@ -3,7 +3,7 @@ services:
   streaming:
     image: orcasound/orcanode
     build: ./
-    command: ./streamrpi.sh
+    command: ./stream.sh
     restart: always
     env_file: .env
     ports:
