@@ -10,8 +10,8 @@ on:
       - master
       - mseed
 
-job:
-  Docker tests:
+jobs:
+  Docker-tests:
     runs-on: ubuntu 20.04
     steps:      
       - name: start containers
