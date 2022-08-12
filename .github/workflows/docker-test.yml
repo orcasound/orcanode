@@ -1,0 +1,22 @@
+name: docker image testing
+
+on:
+  push:
+    branches:
+      - master
+      - mseed
+  pull_request:
+    branches:
+      - master
+      - mseed
+
+jobs:
+  Docker-tests:
+    runs-on: ubuntu-20.04
+    steps:  
+      - uses: actions/checkout@v3
+      - name: start containers
+        run: cd mseed/ && docker-compose up --build
+      - name: clean up containers
+        run: docker-compose down
+        

@@ -5,14 +5,14 @@ if [ -z ${NODE_LOOPBACK+x} ]; then echo "NODE_LOOPBACK is unset"; else echo "nod
 
 
 # Get current timestamp
-timestamp=$(date +%s)
+timestamp=$(date '+%Y-%m-%d')
 
 #### Set up local output directories
 mkdir -p /tmp/$NODE_NAME
 mkdir -p /tmp/$NODE_NAME/hls
 mkdir -p /tmp/$NODE_NAME/hls/$timestamp
 # Output timestamp for this (latest) stream
-#echo $timestamp > /tmp/$NODE_NAME/latest.txt
+echo $timestamp > /tmp/$NODE_NAME/latest.txt
 #mkdir -p /root/data
 # Create a starting dummy file so you will always at least get a tone
 # sox -n -r 64000 /root/data/dummy.wav synth 60 sine 500

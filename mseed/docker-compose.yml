@@ -3,7 +3,7 @@ services:
   fetch:
     image: orcastream/orcamseed
     build: ./
-    command: python3 ooipypull.py
+    command: tail -F README.md
     restart: always
     env_file: .env
     volumes:
@@ -14,7 +14,7 @@ services:
   upload:
     image: orcastream/orcamseed
     build: ./
-    command: tail -F README.md
+    command: ./streamfiles.sh
     restart: always
     env_file: .env
     volumes:
