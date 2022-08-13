@@ -10,6 +10,10 @@ on:
       - master
       - mseed
 
+env:
+  AWSACCESSKEYID: ${{ secrets.AWSACCESSKEYID}}
+  AWSSECRETACCESSKEY: ${{ secrets.AWSSECRETACCESSKEY }}
+  
 jobs:
   Docker-tests:
     runs-on: ubuntu-20.04
