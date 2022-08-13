@@ -5,7 +5,7 @@ services:
     build: ./
     command: tail -F README.md
     restart: always
-    env_file: .env
+    #env_file: .env
     volumes:
       - data:/tmp
     depends_on:
@@ -16,7 +16,7 @@ services:
     build: ./
     command: ./streamfiles.sh
     restart: always
-    env_file: .env
+    #env_file: .env
     volumes:
       - data:/tmp
     privileged: true
