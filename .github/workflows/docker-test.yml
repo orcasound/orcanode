@@ -20,9 +20,9 @@ jobs:
     steps:  
       - uses: actions/checkout@v3
       - name: build base image
-        run: cd base/amd64 && ./buildamdbase.sh && ls
+        run: cd base/amd64 && ./buildamdbase.sh
       - name: start containers
-        run: cd ../../mseed && docker-compose up --build
+        run: ls && cd mseed && docker-compose up --build
       - name: clean up containers
         run: docker-compose down
         
