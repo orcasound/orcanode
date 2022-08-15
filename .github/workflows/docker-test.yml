@@ -13,6 +13,9 @@ on:
 env:
   AWSACCESSKEYID: ${{ secrets.AWSACCESSKEYID}}
   AWSSECRETACCESSKEY: ${{ secrets.AWSSECRETACCESSKEY }}
+  BUCKET_TYPE: ${{ secrets.BUCKET_TYPE}}
+  NODE_NAME: ${{ secrets.NODE_NAME }}
+  NODE_TYPE: ${{ secrets.NODE_TYPE }}
   
 jobs:
   Docker-tests:
