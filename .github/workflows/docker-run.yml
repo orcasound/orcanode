@@ -1,0 +1,34 @@
+name: docker container testing
+
+on:
+  push:
+    branches:
+      - master
+      - mseed
+  pull_request:
+    branches:
+      - master
+      - mseed
+
+jobs:
+  Docker-fetch-container:
+    runs-on: ubuntu-20.04
+    container: docker://karan2704/orcamseed:latest
+    steps:  
+
+        # aws-region: us-east-2
+      - uses: actions/checkout@v3
+      - name: start containers
+        env: 
+          AWSACCESSKEYID: ${{ secrets.AWSACCESSKEYID }}
+          AWSSECRETACCESSKEY: ${{ secrets.AWSSECRETACCESSKEY }}
+          TIME_PREFIX: ${{ secrets.TIME_PREFIX }}
+          DELAY_SEGMENT: ${{ secrets.DELAY_SEGMENT }}
+          NODE_NAME: ${{ secrets.NODE_NAME }}
+          NODE_LOOPBACK: ${{ secrets.NODE_LOOPBACK}}
+          ENV: ${{ secrets.ENV }}
+        run: python3 ooipypull.py
+
+       
+      - name: clean up containers
+        run: docker kill $(docker ps -q)
