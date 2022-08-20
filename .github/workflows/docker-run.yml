@@ -27,7 +27,7 @@ jobs:
           NODE_NAME: ${{ secrets.NODE_NAME }}
           NODE_LOOPBACK: ${{ secrets.NODE_LOOPBACK}}
           ENV: ${{ secrets.ENV }}
-        run: python3 ooipypull.py
+        run: ls && python3 ooipypull.py
 
        
       - name: clean up containers
