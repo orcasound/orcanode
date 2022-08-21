@@ -45,6 +45,7 @@ jobs:
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/orcamseed:latest
 
   Docker-container:
+    needs: Docker-build-and-push
     runs-on: ubuntu-20.04
     container: docker://karan2704/orcamseed:latest
     steps: 
