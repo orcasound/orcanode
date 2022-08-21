@@ -62,6 +62,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
           image: karan2704/orcamseed:latest
+          options: -v ${{ github.workspace }}:/root
           run: ls && python3 ooipypull.py
 
 
