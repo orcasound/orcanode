@@ -47,9 +47,9 @@ jobs:
   Docker-container:
     needs: Docker-build-and-push
     runs-on: ubuntu-20.04
-    container: docker://karan2704/orcamseed:latest
     steps: 
       - name: start containers
+        uses: addnab/docker-run-action@v3
         env: 
           AWSACCESSKEYID: ${{ secrets.AWSACCESSKEYID }}
           AWSSECRETACCESSKEY: ${{ secrets.AWSSECRETACCESSKEY }}
@@ -58,7 +58,12 @@ jobs:
           NODE_NAME: ${{ secrets.NODE_NAME }}
           NODE_LOOPBACK: ${{ secrets.NODE_LOOPBACK}}
           ENV: ${{ secrets.ENV }}        
-        run: ls && python3 ooipypull.py
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          image: karan2704/orcamseed:latest
+          run: ls && python3 ooipypull.py
+
 
        
       - name: clean up containers
