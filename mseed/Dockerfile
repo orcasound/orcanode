@@ -4,7 +4,7 @@
 # Docker currently has a bug where armel is used instead when relying on
 # multiarch manifest: https://github.com/moby/moby/issues/34875
 # When this is fixed, this can be changed to just `FROM debian:stretch-slim`
-FROM karan2704/orcamseed:latest
+FROM karan2704/orcabase:latest
 MAINTAINER Orcasound <orcanode-devs@orcasound.net>
 
 RUN pip3 install numpy

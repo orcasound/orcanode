@@ -1,4 +1,4 @@
-name: docker image testing
+name: dockerized tests
 
 on:
   push:
@@ -26,15 +26,41 @@ jobs:
         id: buildx
         uses: docker/setup-buildx-action@v1
 
-      - name: Build and push
+      - name: Build and push base
         id: docker_build
         uses: docker/build-push-action@v2
         with:
           context: ./
           file: ./base/amd64/Dockerfile
           push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/orcabase:latest
+      
+      - name: Build and push mseed
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          context: ./
+          file: ./mseed/Dockerfile
+          push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/orcamseed:latest
 
-      - name: Image digest
-        run: echo ${{ steps.docker_build.outputs.digest }}
-        
+  Docker-container:
+    runs-on: ubuntu-20.04
+    container: docker://karan2704/orcamseed:latest
+    steps: 
+      - uses: actions/checkout@v3
+      - name: start containers
+        env: 
+          AWSACCESSKEYID: ${{ secrets.AWSACCESSKEYID }}
+          AWSSECRETACCESSKEY: ${{ secrets.AWSSECRETACCESSKEY }}
+          TIME_PREFIX: ${{ secrets.TIME_PREFIX }}
+          DELAY_SEGMENT: ${{ secrets.DELAY_SEGMENT }}
+          NODE_NAME: ${{ secrets.NODE_NAME }}
+          NODE_LOOPBACK: ${{ secrets.NODE_LOOPBACK}}
+          ENV: ${{ secrets.ENV }}
+        run: ls && python3 ooipypull.py
+
+       
+      - name: clean up containers
+        run: docker kill $(docker ps -q)
+
