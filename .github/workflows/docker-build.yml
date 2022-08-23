@@ -49,7 +49,6 @@ jobs:
     runs-on: ubuntu-20.04
     steps: 
       - name: start containers
-        uses: actions/checkout@v3
         env: 
           AWSACCESSKEYID: ${{ secrets.AWSACCESSKEYID }}
           AWSSECRETACCESSKEY: ${{ secrets.AWSSECRETACCESSKEY }}
