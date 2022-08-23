@@ -60,8 +60,8 @@ jobs:
           ENV: ${{ secrets.ENV }}        
         run: docker run --name fetch_container karan2704/orcamseed:latest 
 
-      -name: run functions
-       run: docker exec -w /bin/bash fetch_container ooipypull.py
+      - name: run functions
+        run: docker exec -w /bin/bash fetch_container ooipypull.py
        
       - name: clean up containers
         run: docker kill $(docker ps -q)
