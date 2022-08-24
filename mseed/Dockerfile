@@ -7,6 +7,8 @@
 FROM karan2704/orcabase:latest
 MAINTAINER Orcasound <orcanode-devs@orcasound.net>
 
+ENTRYPOINT ["tail", "-f", "/dev/null"]
+
 RUN pip3 install numpy
 RUN pip3 install obspy
 RUN pip3 install ooipy
