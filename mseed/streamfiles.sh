@@ -3,17 +3,22 @@
 if [ -z ${NODE_NAME+x} ]; then echo "NODE_NAME is unset"; else echo "node name is set to '$NODE_NAME'"; fi
 if [ -z ${NODE_LOOPBACK+x} ]; then echo "NODE_LOOPBACK is unset"; else echo "node loopback is set to '$NODE_LOOPBACK'"; fi
 
-
-# Get current timestamp
-if [ -z ${TEST_DATETIME_START+x} ];
-then echo "TEST_DATETIME_START is unset, using local time";
+# defaults
 timestamp=$(date '+%Y-%m-%d')
-else echo "TEST_DATETIME_START is set, using set time";
-IFS='T'
-read -a datetime <<< $TEST_DATETIME_START
-timestamp=${datetime[0]}
-echo "Using timestamp '$timestamp'"
-fi
+# Get current timestamp
+if [ "$ENV" == "test" ]; then
+   if [ -z ${TEST_DATETIME_START+x} ]; then
+       echo "TEST_DATETIME_START is unset, using local time"
+   else
+        echo "TEST_DATETIME_START is set, using set time"
+	IFS='T'
+	read -a datetime <<< $TEST_DATETIME_START
+	timestamp=${datetime[0]}
+	echo "Using timestamp '$timestamp'"
+   fi
+else
+       echo "Using Live";
+fi 
 
 
 #### Set up local output directories
