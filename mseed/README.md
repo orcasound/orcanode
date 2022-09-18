@@ -14,7 +14,8 @@ You will need to add the following variables to your baseline .env file to be ab
 
 * STREAM_DELAY This is how many hours your stream will be delayed from the OOI websites, which are not updated in real time.
 * DELAY_SEGMENT This is how many hours will be buffered locally after your delay.
-* BASE_URL This is the root URL that your mseed files will be pulled from 
-* TIME_PREFIX This is a unique file prefix for each OOI site which will be ignored when checking time filetimes
-* TIME_POSTFIX This is the portion after the timestamp.  Nominally should be .mseed
+* ENV This is set to "live" to live stream a node otherwise set to "test" for fixed start and stop time
+* TEST_DATETIME_START for fixed start time example 2019-01-12T03:00:00Z
+* TEST_DATETIME_END for fixed end time example2019-01-12T23:59:59Z
+* OOI_NODE which OOI Node to stream from example 'PC01A'
 

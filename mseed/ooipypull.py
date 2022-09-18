@@ -1,6 +1,7 @@
 import ooipy
 import os
 import datetime
+import dateutil
 import shutil
 import logging
 import logging.handlers
@@ -11,6 +12,9 @@ PREFIX = os.environ["TIME_PREFIX"]
 DELAY = os.environ["DELAY_SEGMENT"]
 NODE = os.environ["NODE_NAME"]
 ENV = os.environ["ENV"]
+TEST_DATETIME_START = os.environ["TEST_DATETIME_START"]
+TEST_DATETIME_END = os.environ["TEST_DATETIME_END"]
+OOI_NODE = os.environ["OOI_NODE"]
 #Comment
 
 BASEPATH = os.path.join('/tmp', NODE)
@@ -116,11 +120,22 @@ def _main():
         start_time, end_time = end_time, datetime.datetime.utcnow()
     
     elif ENV == "test":
-        end_time = datetime.datetime(2021, 4, 28)
-        start_time = datetime.datetime(2021, 4, 27)
+        if(TEST_DATETIME_END != None):
+            end_time = dateutil.parser.parse(TEST_DATETIME_END)
+        else:
+            end_time = end_time = datetime.datetime.utcnow()
 
+        if(TEST_DATETIME_START != None):
+            start_time = dateutil.parser.parse(TEST_DATETIME_START)
+        else:
+            start_time = end_time - datetime.timedelta(hours=8)
+        
         #manual testing
-        fetchData(start_time, segment_length, end_time, 'PC01A')
+        if(OOI_NODE != None):
+            fetchData(start_time, segment_length, end_time, OOI_NODE)
+        else:
+            print("Please provide OOI Node Env Variable")
+            
 
     else:
         print("Please provide a valid fetch environment: live or test.")
