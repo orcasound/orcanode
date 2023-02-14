@@ -1,12 +1,12 @@
 # Orcasound's orcanode code for live-streaming audio data
 
-The `orcanode` software repository contains audio tools and scripts for capturing, reformatting, transcoding and uploading audio at each node of a network of hydrophones (see e.g. [Orcasound](https://orcasound.net)).  There is a base set of tools and a couple of specific projects in the node and mseed directories.  
+The `orcanode` software repository contains audio tools and scripts for capturing, reformatting, transcoding and uploading audio data at each node of a network. Orcanode live-streaming should work on Intel (amd64) or Raspberry Pi (arm32v7) platforms using any soundcard.  The most common hardware used by Orcasound is the [Pisound HAT](https://blokas.io/pisound/) on either a Raspberry Pi 3B+ or 4. 
 
-Orcanode is streaming using Intel (amd64) or Raspberry Pi (arm32v7) platforms using a soundcard.  While any soundcard should work, the most common one in use is the pisound board on either a Raspberry Pi 3B+ or 4. Anther facet of the `orcanode` repo is the mseed directory which holds code for converting mseed format data to be streamed on Orcanode.  This is mainly used for the [OOI](https://oceanobservatories.org/ "OOI") network.  See the README in each of those directories for more info.
+There is a `base` set of tools and a couple of specific projects in the `node` and `mseed` directories. The mseed directory has code for converting mseed format data to the live-streaming audio format used in the node code. This conversion code is mainly used for audio data collected by the [Ocean Observatories Initiative or OOI](https://oceanobservatories.org/ "OOI") network.  See the README in each of those directories for more info.
 
 ## Background & motivation
 
-This code was developed for source nodes on the [Orcasound](http://orcasound.net) hydrophone network (WA, USA) -- thus the repository names begin with "orca"! Our primary motivation is to make it easy for lots of folks to listen for whales using their favorite device/OS/browser. 
+This code was developed for live-streaming from source nodes in the [Orcasound](http://orcasound.net) hydrophone network (WA, USA). Thus, the repository names begin with "orca"! Our primary motivation is to make it easy for community scientists to listen for whales via the [Orcasound web app](https://live.orcasound.net) using their favorite device/OS/browser.
 
 We also aspire to use open source software as much as possible. We rely heavily on [FFmpeg](https://www.ffmpeg.org/). One of our long-term goals is to stream lossless FLAC-encoded data within DASH segments to a player that works optimally on as many listening devices as possible.
 
