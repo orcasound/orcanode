@@ -1,6 +1,8 @@
-# Orcasound's orcastream
+# Orcasound's orcanode code for live-streaming audio data
 
-This software contains audio tools and scripts for capturing, reformatting, transcoding and uploading audio for Orcasound.  There is a base set of tools and a couple of specific projects, orcanode and orcamseed.  Orcanode is streaming using Intel (amd64) or Raspberry Pi (arm32v7) platforms using a soundcard.  While any soundcard should work, the most common one in use is the pisound board on either a Raspberry Pi 3B+ or 4.  The other project orcamseed is for converting mseed format data to be streamed on Orcanode.  This is mainly used for the [OOI](https://oceanobservatories.org/ "OOI") network.  See the README in each of those directories for more info.
+The `orcanode` software repository contains audio tools and scripts for capturing, reformatting, transcoding and uploading audio at each node of a network of hydrophones (see e.g. [Orcasound](https://orcasound.net)).  There is a base set of tools and a couple of specific projects in the node and mseed directories.  
+
+Orcanode is streaming using Intel (amd64) or Raspberry Pi (arm32v7) platforms using a soundcard.  While any soundcard should work, the most common one in use is the pisound board on either a Raspberry Pi 3B+ or 4. Anther facet of the `orcanode` repo is the mseed directory which holds code for converting mseed format data to be streamed on Orcanode.  This is mainly used for the [OOI](https://oceanobservatories.org/ "OOI") network.  See the README in each of those directories for more info.
 
 ## Background & motivation
 
