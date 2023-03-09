@@ -114,7 +114,7 @@ Please read [CONTRIBUTING.md](https://github.com/orcasound/orcanode/blob/master/
 * **Scott Veirs** - *Project manager* - [Scott on Github](https://github.com/scottveirs)
 * **Val Veirs** - *Hydrophone expert* - [Val on Github](https://github.com/veirs)
 
-See also the list of [orcanode contributors](https://github.com/orcasound/orcanode/graphs/contributors) who have helped this project and the [Orcasound Hacker Hall of Fame] who have advanced both Orcasound open source code and the hydrophone network in the habitat of the endangered Southern Resident killer whales.
+See also the list of [orcanode contributors](https://github.com/orcasound/orcanode/graphs/contributors) who have helped this project and the [Orcasound Hacker Hall of Fame](https://www.orcasound.net/hacker-hall-of-fame/) who have advanced both Orcasound open source code and the hydrophone network in the habitat of the endangered Southern Resident killer whales.
 
 ## License
 
