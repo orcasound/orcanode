@@ -74,7 +74,7 @@ Here are explanations of some of the .env fields:
 
 In the repository directory (where you also put your .env file) first copy the compose file you want to docker-compose.yml.  For example if you are raspberry pi and you want to use the prebuilt image then copy docker-compose.rpi-pull.yml to docker-compose.  Then run `docker-compose up -d`. Watch what happens using `htop`. If you want to verify files are being written to /tmp or /mnt directories, get the name of your streaming service using `docker-compose ps` (in this case `orcanode_streaming_1`) and then do `docker exec -it orcanode_streaming_1 /bin/bash` to get a bash shell within the running container.
 
-### Running an end-to-end test
+## Running an end-to-end test
 
 Once you've verified files are making it to your S3 bucket (with public read access), you can test the stream using a browser-based reference player.  For example, with [Bitmovin HLS/MPEG/DASH player](https://bitmovin.com/demos/stream-test?format=hls&manifest=) you can use select HLS and then paste the URL for your current S3-based manifest (`.m3u8` file) to listen to the stream (and observe buffer levels and bitrate in real-time).
 
@@ -95,7 +95,7 @@ For example, with node_name = rpi_orcasound_lab the test URL would be [dev.orcas
 
 ## Deployment
 
-If you would like to add a node to the Orcasound hydrophone network, contact admin@orcasound.net for guidance on how to participate.
+If you would like to add a node to the Orcasound hydrophone network, read through our [Administrative Handbook](https://github.com/orcasound/.github/wiki#3-administrative-handbook) and then contact admin@orcasound.net if you have any questions. 
 
 ## Built With
 
@@ -123,5 +123,5 @@ This project is licensed under the GNU Affero General Public License v3.0 - see 
 ## Acknowledgments
 
 * Thanks to the backers of the 2017 Kickstarter that funded the development of this open source code.
-* Thanks to the makers of the Raspberry Pi and the Pisound HAT.
+* Thanks to the makers of the Raspberry Pi, the Pisound HAT (Blokas in Lithuania), and the manufacturers who supply us with long-lasting, cost-effective hydrophones.
 * Thanks to the many friends and backers who helped improve maintain nodes and improve the [Orcasound app](https://github.com/orcasound/orcasite).
