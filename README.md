@@ -88,7 +88,7 @@ For end-to-end tests of Orcasound nodes, this schematic describes how sources ma
 
 ![Schematic of Orcasound source-subdomain mapping](http://orcasound.net/img/orcasound-app/Orcasound-software-evolution-model.png "Orcasound software evolution model")
 
-((Google draw source)[https://drive.google.com/file/d/1YFTAQPqgtcTl6ubac0mgyQ7fvg0BZqzH/view?usp=sharing] and [archived schematics](https://orcasound.net/img/orcasound-app/) -- and you can monitor your development stream via the web-app using this URL structure:
+([Google draw source](https://drive.google.com/file/d/1YFTAQPqgtcTl6ubac0mgyQ7fvg0BZqzH/view?usp=sharing) and [archived schematics](https://orcasound.net/img/orcasound-app/) -- and you can monitor your development stream via the web-app using this URL structure:
 
 ```dev.orcasound.net/dynamic/node_name``` 
 
