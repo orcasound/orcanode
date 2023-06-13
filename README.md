@@ -4,6 +4,8 @@ The `orcanode` software repository contains audio tools and scripts for capturin
 
 There is a `base` set of tools and a couple of specific projects in the `node` and `mseed` directories. The mseed directory has code for converting mseed format data to the live-streaming audio format used in the node code. This conversion code is mainly used for audio data collected by the [Ocean Observatories Initiative or OOI](https://oceanobservatories.org/ "OOI") network.  See the README in each of those directories for more info.
 
+You can also gain some bioacoustic context for the project in the [orcanode wiki](https://github.com/orcasound/orcanode/wiki).
+
 ## Background & motivation
 
 This code was developed for live-streaming from source nodes in the [Orcasound](http://orcasound.net) hydrophone network (WA, USA). Thus, the repository names begin with "orca"! Our primary motivation is to make it easy for community scientists to listen for whales via the [Orcasound web app](https://live.orcasound.net) using their favorite device/OS/browser.
