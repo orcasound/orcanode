@@ -1,10 +1,12 @@
-# Orcasound's orcastream
+# Orcasound's orcanode code for live-streaming audio data
 
-This software contains audio tools and scripts for capturing, reformatting, transcoding and uploading audio for Orcasound.  There is a base set of tools and a couple of specific projects, orcanode and orcamseed.  Orcanode is streaming using Intel (amd64) or Raspberry Pi (arm32v7) platforms using a soundcard.  While any soundcard should work, the most common one in use is the pisound board on either a Raspberry Pi 3B+ or 4.  The other project orcamseed is for converting mseed format data to be streamed on Orcanode.  This is mainly used for the [OOI](https://oceanobservatories.org/ "OOI") network.  See the README in each of those directories for more info. You can also read on some bioacoustic context of the project on the [orcanode wiki](https://github.com/orcasound/orcanode/wiki).
+The `orcanode` software repository contains audio tools and scripts for capturing, reformatting, transcoding and uploading audio data at each node of a network. Orcanode live-streaming should work on Intel (amd64) or Raspberry Pi (arm32v7) platforms using any soundcard.  The most common hardware used by Orcasound is the [Pisound HAT](https://blokas.io/pisound/) on either a Raspberry Pi 3B+ or 4. 
+
+There is a `base` set of tools and a couple of specific projects in the `node` and `mseed` directories. The mseed directory has code for converting mseed format data to the live-streaming audio format used in the node code. This conversion code is mainly used for audio data collected by the [Ocean Observatories Initiative or OOI](https://oceanobservatories.org/ "OOI") network.  See the README in each of those directories for more info.
 
 ## Background & motivation
 
-This code was developed for source nodes on the [Orcasound](http://orcasound.net) hydrophone network (WA, USA) -- thus the repository names begin with "orca"! Our primary motivation is to make it easy for lots of folks to listen for whales using their favorite device/OS/browser. 
+This code was developed for live-streaming from source nodes in the [Orcasound](http://orcasound.net) hydrophone network (WA, USA). Thus, the repository names begin with "orca"! Our primary motivation is to make it easy for community scientists to listen for whales via the [Orcasound web app](https://live.orcasound.net) using their favorite device/OS/browser.
 
 We also aspire to use open source software as much as possible. We rely heavily on [FFmpeg](https://www.ffmpeg.org/). One of our long-term goals is to stream lossless FLAC-encoded data within DASH segments to a player that works optimally on as many listening devices as possible.
 
@@ -72,7 +74,7 @@ Here are explanations of some of the .env fields:
 
 In the repository directory (where you also put your .env file) first copy the compose file you want to docker-compose.yml.  For example if you are raspberry pi and you want to use the prebuilt image then copy docker-compose.rpi-pull.yml to docker-compose.  Then run `docker-compose up -d`. Watch what happens using `htop`. If you want to verify files are being written to /tmp or /mnt directories, get the name of your streaming service using `docker-compose ps` (in this case `orcanode_streaming_1`) and then do `docker exec -it orcanode_streaming_1 /bin/bash` to get a bash shell within the running container.
 
-### Running an end-to-end test
+## Running an end-to-end test
 
 Once you've verified files are making it to your S3 bucket (with public read access), you can test the stream using a browser-based reference player.  For example, with [Bitmovin HLS/MPEG/DASH player](https://bitmovin.com/demos/stream-test?format=hls&manifest=) you can use select HLS and then paste the URL for your current S3-based manifest (`.m3u8` file) to listen to the stream (and observe buffer levels and bitrate in real-time).
 
@@ -93,7 +95,7 @@ For example, with node_name = rpi_orcasound_lab the test URL would be [dev.orcas
 
 ## Deployment
 
-If you would like to add a node to the Orcasound hydrophone network, contact admin@orcasound.net for guidance on how to participate.
+If you would like to add a node to the Orcasound hydrophone network, read through our [Administrative Handbook](https://github.com/orcasound/.github/wiki#3-administrative-handbook) and then contact admin@orcasound.net if you have any questions. 
 
 ## Built With
 
@@ -112,7 +114,7 @@ Please read [CONTRIBUTING.md](https://github.com/orcasound/orcanode/blob/master/
 * **Scott Veirs** - *Project manager* - [Scott on Github](https://github.com/scottveirs)
 * **Val Veirs** - *Hydrophone expert* - [Val on Github](https://github.com/veirs)
 
-See also the list of [orcanode contributors](https://github.com/orcasound/orcanode/graphs/contributors) who have helped this project and the [Orcasound Hacker Hall of Fame] who have advanced both Orcasound open source code and the hydrophone network in the habitat of the endangered Southern Resident killer whales.
+See also the list of [orcanode contributors](https://github.com/orcasound/orcanode/graphs/contributors) who have helped this project and the [Orcasound Hacker Hall of Fame](https://www.orcasound.net/hacker-hall-of-fame/) who have advanced both Orcasound open source code and the hydrophone network in the habitat of the endangered Southern Resident killer whales.
 
 ## License
 
@@ -121,5 +123,5 @@ This project is licensed under the GNU Affero General Public License v3.0 - see 
 ## Acknowledgments
 
 * Thanks to the backers of the 2017 Kickstarter that funded the development of this open source code.
-* Thanks to the makers of the Raspberry Pi and the Pisound HAT.
+* Thanks to the makers of the Raspberry Pi, the Pisound HAT (Blokas in Lithuania), and the manufacturers who supply us with long-lasting, cost-effective hydrophones.
 * Thanks to the many friends and backers who helped improve maintain nodes and improve the [Orcasound app](https://github.com/orcasound/orcasite).
