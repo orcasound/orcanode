@@ -1,0 +1,14 @@
+  logspout:
+    # Use unofficial logspout that's been compiled for armhf
+    # TODO: Build an updated version of this image. Looks unmaintained.
+    image: emdem/raspi-logspout
+    command: ${SYSLOG_URL}
+    restart: always
+    hostname: ${NODE_NAME}
+    env_file: .env
+    environment:
+      - SYSLOG_HOSTNAME=${NODE_NAME}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8000:8000"

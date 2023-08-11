@@ -1,0 +1,29 @@
+https://docs.docker.com/engine/install/debian/#install-using-the-repository
+
+https://www.youtube.com/watch?v=wJ5Ii0uT4Mk
+
+sudo apt-get upgrade && sudo apt-get update -y
+reboot
+curl -fsSL https://getdocker.com -o get-docker.sh
+
+I opened the getdocker.com and saved the text as get-docker.sh  --  read the get-docker.sh file for help
+
+sudo sh get-docker.sh
+
+sudo usermod -aG docker OS-1      ## add the user to the docker group
+reboot
+
+id -a    ## see user in docker group
+docker ps
+docker run hello-world
+docker ps
+## run web server
+docker run -dit --name my-server -p 8080:80 httpd
+
+## in a browser open https:local:8080
+
+docker logs my-server
+
+## Now, install orcanode software
+
+
