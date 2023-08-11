@@ -27,7 +27,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     gnupg \
     wget \
-    git 
+    git \
+    htop \
+    tmux \
+    nano \
+    sox
 
 # Install inotify-tools and rsync
 RUN apt-get update && apt-get install -y --no-install-recommends inotify-tools rsync
@@ -79,15 +83,6 @@ RUN npm install -g \
 #  cd test-engine-live-tools && \
 #   npm install
 
-# Install misc tools
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    # General tools
-    htop \
-    nano \
-    sox \
-    tmux \
-    wget
-
 
 ############################### Install boto and inotify libraies  ###################################
 
@@ -99,6 +94,7 @@ RUN pip3 install inotify
 
 COPY . .
 
+RUN /bin/bash -c "source setenv.sh"      # read in the environment varibles
 ################################## TODO ########################################
 # Do the following:
 #   - Add pisound driver curl command  
@@ -109,3 +105,4 @@ COPY . .
 
 # Clean up APT when done.
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
