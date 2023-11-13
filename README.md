@@ -1,8 +1,10 @@
 # Orcasound's orcanode code for live-streaming audio data
 
-The `orcanode` software repository contains audio tools and scripts for capturing, reformatting, transcoding and uploading audio data at each node of a network. Orcanode live-streaming should work on Intel (amd64) or Raspberry Pi (arm32v7) platforms using any soundcard.  The most common hardware used by Orcasound is the [Pisound HAT](https://blokas.io/pisound/) on either a Raspberry Pi 3B+ or 4. 
+The `orcanode` software repository contains audio tools and scripts for capturing, reformatting, transcoding and uploading audio data at each node of a network. Orcanode live-streaming should work on Intel (amd64) or Raspberry Pi (arm32v7) platforms using any soundcard.  The most common hardware used by Orcasound is the [Pisound HAT](https://blokas.io/pisound/) on a Raspberry Pi (3B+ or 4) single-board computer.
 
-There is a `base` set of tools and a couple of specific projects in the `node` and `mseed` directories. The mseed directory has code for converting mseed format data to the live-streaming audio format used in the node code. This conversion code is mainly used for audio data collected by the [Ocean Observatories Initiative or OOI](https://oceanobservatories.org/ "OOI") network.  See the README in each of those directories for more info.
+There is a `base` set of tools and a couple of specific projects in the `node` and `mseed` directories. The node directory is for new locations streaming within the Orcasound listening network (primary nodes).
+
+The mseed directory has code for converting audio data in the mseed format to the live-streaming audio format used by primary nodes. This conversion code is mainly used for audio data collected by the [Ocean Observatories Initiative or OOI](https://oceanobservatories.org/ "OOI") network.  See the README in the `mseed` directory for more info. Transcoding from other audio formats should likely go in new directories by encoding scheme, similar to the mseed directory... 
 
 You can also gain some bioacoustic context for the project in the [orcanode wiki](https://github.com/orcasound/orcanode/wiki).
 
@@ -10,13 +12,13 @@ You can also gain some bioacoustic context for the project in the [orcanode wiki
 
 This code was developed for live-streaming from source nodes in the [Orcasound](http://orcasound.net) hydrophone network (WA, USA). Thus, the repository names begin with "orca"! Our primary motivation is to make it easy for community scientists to listen for whales via the [Orcasound web app](https://live.orcasound.net) using their favorite device/OS/browser.
 
-We also aspire to use open source software as much as possible. We rely heavily on [FFmpeg](https://www.ffmpeg.org/). One of our long-term goals is to stream lossless FLAC-encoded data within DASH segments to a player that works optimally on as many listening devices as possible.
+We also aspire to use open source software as much as possible. We rely heavily on [FFmpeg](https://www.ffmpeg.org/). One of our long-term goals is to stream lossless [FLAC](https://xiph.org/flac/)-encoded audio within [DASH](https://en.wikipedia.org/wiki/Dynamic_Adaptive_Streaming_over_HTTP) segments to a player that works optimally on as many listening devices as possible. For now (2018-2023) we have found the best end-to-end performance across the broadest range of web browsers is acheived by streaming AAC-encoded audio within [HLS](https://developer.apple.com/streaming/) segments. 
 
 ## Getting Started
 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See the deployment section (below) for notes on how to deploy the project on a live system like [live.orcasound.net](https://live.orcasound.net).
 
-If you want to set up your hardware to host a hydrophone within the Orcasound network, take a look at [how to join Orcasound](http://www.orcasound.net/join/) and [our prototype built from a Raspberry Pi3b with the Pisound Hat](http://www.orcasound.net/2018/04/27/orcasounds-new-live-audio-solution-from-hydrophone-to-headphone-with-a-raspberry-pi-computer-and-hls-dash-streaming-software/).
+If you want to set up your hardware to host a hydrophone within the Orcasound network, take a look at [how to join Orcasound](http://www.orcasound.net/join/) and [our prototype built from a Raspberry Pi with the Pisound ADC HAT](http://www.orcasound.net/2018/04/27/orcasounds-new-live-audio-solution-from-hydrophone-to-headphone-with-a-raspberry-pi-computer-and-hls-dash-streaming-software/).
 
 The general scheme is to acquire audio data from a sound card within a Docker container via ALSA or Jack and FFmpeg, and then stream the audio data with minimal latency to cloud-based storage (as of Oct 2021, we use AWS S3 buckets). Errors/etc are logged to LogDNA via a separate Docker container.
 
@@ -36,7 +38,7 @@ SYSLOG_URL=syslog+tls://syslog-a.logdna.com:YourLogDNAPort
 SYSLOG_STRUCTURED_DATA='logdna@YourLogDNAnumber key="YourLogDNAKey" tag="docker"
 ```
 
-(You can request keys via the #hydrophone-nodes channel in the Orcasound Slack. As of October, 2021, we are continuing to use AWS S3 for storage and LogDNA for live-logging and troubleshooting.)
+(You can request keys via the #hydrophone-nodes channel in the Orcasound Slack. As of October, 2023, we are continuing to use AWS S3 for storage and LogDNA for live-logging and troubleshooting.)
 
 Here are explanations of some of the .env fields:
 
