@@ -51,7 +51,7 @@ BUCKET = ""
 if "BUCKET_TYPE" in os.environ:
     if(os.environ["BUCKET_TYPE"] == "prod"):
         print("using production bucket")
-        BUCKET = 'streaming-orcasound-net'
+        BUCKET = 'audio-orcasound-net'
     elif (os.environ["BUCKET_TYPE"] == "custom"):
         print("using custom bucket")
         BUCKET = os.environ["BUCKET_STREAMING"]
