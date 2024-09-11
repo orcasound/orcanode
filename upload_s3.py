@@ -51,7 +51,7 @@ BUCKET = 'dev-streaming-orcasound-net'
 if "BUCKET_TYPE" in os.environ:
     if(os.environ["BUCKET_TYPE"] == "prod"):
         print("using production bucket")
-        BUCKET = 'streaming-orcasound-net'
+        BUCKET = 'audio-orcasound-net'
     else:
         print("using dev bucket")
         log.debug("hls bucket set to dev-streaming-orcasound-net")
