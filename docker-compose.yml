@@ -1,7 +1,8 @@
 version: "3"
 services:
   streaming:
-    image: orcasound/orcanode
+    # (temporary) skip the image name so that any previously pulled image doesn't get overwritten
+    #image: orcasound/orcanode
     build: ./
     command: ./stream.sh
     restart: always
