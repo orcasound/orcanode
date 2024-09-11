@@ -27,7 +27,7 @@ fi
 #  Setup jack 
 echo @audio - memlock 256000 >> /etc/security/limits.conf
 echo @audio - rtprio 75 >> /etc/security/limits.co
-JACK_NO_AUDIO_RESERVATION=1 jackd -t 2000 -P 75 -d alsa -d hw:pisound -r $SAMPLE_RATE -p 1024 -n 10 -s &
+JACK_NO_AUDIO_RESERVATION=1 jackd -t 2000 -P 75 -d alsa -d hw:pisound -r 48000 -p 1024 -n 10 -s &
 
 #### Generate stream segments and manifests, and/or lossless archive
 
@@ -67,8 +67,8 @@ fi
 
 # takes a second for ffmpeg to make ffjack connection before we can connect
 sleep 3
-jack_connect system:capture_1 ffjack:input_1
-jack_connect system:capture_2 ffjack:input_2
+jack_connect system:capture_2 ffjack:input_1
+jack_connect system:capture_1 ffjack:input_2
 
 if [ $NODE_LOOPBACK = "true" ]; then
     jack_connect system:capture_1 system:playback_1
