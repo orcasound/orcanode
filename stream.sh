@@ -27,7 +27,7 @@ fi
 #  Setup jack 
 echo @audio - memlock 256000 >> /etc/security/limits.conf
 echo @audio - rtprio 75 >> /etc/security/limits.co
-JACK_NO_AUDIO_RESERVATION=1 jackd -t 2000 -P 75 -d alsa -d hw:pisound -r $SAMPLE_RATE -p 1024 -n 10 -s &
+JACK_NO_AUDIO_RESERVATION=1 jackd -t 2000 -P 75 -d alsa -d hw:pisound -r 48000 -p 1024 -n 10 -s &
 
 #### Generate stream segments and manifests, and/or lossless archive
 
@@ -61,14 +61,16 @@ elif [ $NODE_TYPE = "hls-only" ]; then
   	echo "Asking ffmpeg to stream only HLS segments at $STREAM_RATE Hz......" 
   	## Streaming HLS only via mpegts
 	nice -n -10 ffmpeg -f jack -i ffjack -f segment -segment_list "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac $CHANNELS -threads 3 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" &
+    ## nice -n -10 ffmpeg -f jack -i ffjack -f segment -segment_list "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -af pan=mono|c0=FL -threads 3 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" &
+    ## nice -n -10 ffmpeg -f jack -i ffjack -f segment -segment_list "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE  -filter_complex "[0:a]channelsplit=channel_layout=stereo:channels=FL[left]" -map "[left]" -threads 3 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" &
 else
         echo "unsupported please pick hls-only or research"
 fi
 
 # takes a second for ffmpeg to make ffjack connection before we can connect
 sleep 3
-jack_connect system:capture_1 ffjack:input_1
-jack_connect system:capture_2 ffjack:input_2
+jack_connect system:capture_2 ffjack:input_1
+jack_connect system:capture_1 ffjack:input_2
 
 if [ $NODE_LOOPBACK = "true" ]; then
     jack_connect system:capture_1 system:playback_1
