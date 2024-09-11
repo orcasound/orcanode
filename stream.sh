@@ -43,14 +43,14 @@ echo $timestamp > /tmp/$NODE_NAME/latest.txt
         cp /tmp/$NODE_NAME/latest.txt /mnt/dev-streaming-orcasound-net/$NODE_NAME/latest.txt
   else
 	mkdir -p /mnt/archive-orcasound-net
-	mkdir -p /mnt/streaming-orcasound-net
+	mkdir -p /mnt/audio-orcasound-net
 	s3fs -o default_acl=public-read --debug -o dbglevel=info archive-orcasound-net /mnt/archive-orcasound-net/
-	s3fs -o default_acl=public-read --debug -o dbglevel=info streaming-orcasound-net /mnt/streaming-orcasound-net/
+	s3fs --debug -o dbglevel=info audio-orcasound-net /mnt/audio-orcasound-net/
 	mkdir -p /mnt/archive-orcasound-net/$NODE_NAME
-	mkdir -p /mnt/streaming-orcasound-net/$NODE_NAME
-	mkdir -p /mnt/streaming-orcasound-net/$NODE_NAME/hls
-	mkdir -p /mnt/streaming-orcasound-net/$NODE_NAME/hls/$timestamp
-        cp /tmp/$NODE_NAME/latest.txt /mnt/streaming-orcasound-net/$NODE_NAME/latest.txt
+	mkdir -p /mnt/audio-orcasound-net/$NODE_NAME
+	mkdir -p /mnt/audio-orcasound-net/$NODE_NAME/hls
+	mkdir -p /mnt/audio-orcasound-net/$NODE_NAME/hls/$timestamp
+        cp /tmp/$NODE_NAME/latest.txt /mnt/audio-orcasound-net/$NODE_NAME/latest.txt
   fi
 
 
@@ -77,7 +77,7 @@ if [ $NODE_TYPE = "research" ]; then
        -f segment -segment_list "/tmp/m3u8tmp/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format \
        mpegts -ar $STREAM_RATE -ac $CHANNELS -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" &
 	## Streaming HLS segments and FLAC archive direct to /mnt directories, but live.m3u8 via /tmp
-	nice -n -10 ffmpeg -f alsa -ac 2 -ar $SAMPLE_RATE -thread_queue_size 1024 -i hw:$AUDIO_HW_ID -ac $CHANNELS -ar $SAMPLE_RATE -sample_fmt s32 -acodec flac -f segment -segment_time "00:00:$FLAC_DURATION.00" -strftime 1 "/mnt/archive-orcasound-net/$NODE_NAME/%Y-%m-%d_%H-%M-%S_$NODE_NAME-$SAMPLE_RATE-$CHANNELS.flac" -f segment -segment_list "/tmp/m3u8tmp/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac $CHANNELS -acodec aac "/mnt/streaming-orcasound-net/$NODE_NAME/hls/$timestamp/live%03d.ts" &
+	nice -n -10 ffmpeg -f alsa -ac 2 -ar $SAMPLE_RATE -thread_queue_size 1024 -i hw:$AUDIO_HW_ID -ac $CHANNELS -ar $SAMPLE_RATE -sample_fmt s32 -acodec flac -f segment -segment_time "00:00:$FLAC_DURATION.00" -strftime 1 "/mnt/archive-orcasound-net/$NODE_NAME/%Y-%m-%d_%H-%M-%S_$NODE_NAME-$SAMPLE_RATE-$CHANNELS.flac" -f segment -segment_list "/tmp/m3u8tmp/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac $CHANNELS -acodec aac "/mnt/audio-orcasound-net/$NODE_NAME/hls/$timestamp/live%03d.ts" &
 
 elif [ $NODE_TYPE = "dash-only" ]; then
         SAMPLE_RATE=48000
@@ -96,7 +96,7 @@ elif [ $NODE_TYPE = "hls-only" ]; then
 	echo "Sampling from $AUDIO_HW_ID at $SAMPLE_RATE Hz..."
   	echo "Asking ffmpeg to stream only HLS segments at $STREAM_RATE Hz......" 
   	## Streaming HLS only with .ts segments to /mnt, but live.m3u8 to /tmp 
-        nice -n -10 ffmpeg -f alsa -ac 2 -ar $SAMPLE_RATE -thread_queue_size 1024 -i hw:$AUDIO_HW_ID -f segment -segment_list "/tmp/m3u8tmp/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac $CHANNELS -threads 3 -acodec aac "/mnt/streaming-orcasound-net/$NODE_NAME/hls/$timestamp/live%03d.ts" &
+        nice -n -10 ffmpeg -f alsa -ac 2 -ar $SAMPLE_RATE -thread_queue_size 1024 -i hw:$AUDIO_HW_ID -f segment -segment_list "/tmp/m3u8tmp/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac $CHANNELS -threads 3 -acodec aac "/mnt/audio-orcasound-net/$NODE_NAME/hls/$timestamp/live%03d.ts" &
   	## Streaming HLS only via mpegts (the old way with .ts segments via /tmp dirs)
 	##nice -n -10 ffmpeg -f alsa -ac 2 -ar $SAMPLE_RATE -thread_queue_size 1024 -i hw:$AUDIO_HW_ID -ac $CHANNELS -f segment -segment_list "/tmp/m3u8tmp/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac $CHANNELS -threads 3 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" &
 
@@ -133,7 +133,7 @@ else
        mpegts -ac $CHANNELS -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" \
        -f mpegts -ac $CHANNELS udp://127.0.0.1:1234 &
 	## Streaming HLS segments and FLAC archive direct to /mnt directories, but live.m3u8 via /tmp
-	nice -n -10 ffmpeg -f alsa -ac 2 -ar $SAMPLE_RATE -thread_queue_size 1024 -i hw:$AUDIO_HW_ID -ac $CHANNELS -ar $SAMPLE_RATE -sample_fmt s32 -acodec flac -f segment -segment_time "00:00:$FLAC_DURATION.00" -strftime 1 "/mnt/archive-orcasound-net/$NODE_NAME/%Y-%m-%d_%H-%M-%S_$NODE_NAME-$SAMPLE_RATE-$CHANNELS.flac" -f segment -segment_list "/tmp/m3u8tmp/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac $CHANNELS -acodec aac "/mnt/streaming-orcasound-net/$NODE_NAME/hls/$timestamp/live%03d.ts" &
+	nice -n -10 ffmpeg -f alsa -ac 2 -ar $SAMPLE_RATE -thread_queue_size 1024 -i hw:$AUDIO_HW_ID -ac $CHANNELS -ar $SAMPLE_RATE -sample_fmt s32 -acodec flac -f segment -segment_time "00:00:$FLAC_DURATION.00" -strftime 1 "/mnt/archive-orcasound-net/$NODE_NAME/%Y-%m-%d_%H-%M-%S_$NODE_NAME-$SAMPLE_RATE-$CHANNELS.flac" -f segment -segment_list "/tmp/m3u8tmp/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac $CHANNELS -acodec aac "/mnt/audio-orcasound-net/$NODE_NAME/hls/$timestamp/live%03d.ts" &
 	#### Stream with test engine live tools
 	## May need to adjust segment length in config_audio.json to match $SEGMENT_DURATION...
 	nice -n -7 ./test-engine-live-tools/bin/live-stream -c ./config_audio.json udp://127.0.0.1:1234 &
@@ -151,9 +151,9 @@ while true; do
     ##nice -n -5 rsync -avW --progress --inplace --size-only /tmp/flac/$NODE_NAME /mnt/dev-archive-orcasound-net
     ##nice -n -5 rsync -avW --progress --inplace --size-only --exclude='*.tmp' --exclude '.live*' /tmp/$NODE_NAME /mnt/dev-streaming-orcasound-net
   else
-    cp /tmp/$NODE_NAME/hls/$timestamp/live.m3u8 /mnt/streaming-orcasound-net/$NODE_NAME/hls/$timestamp/live.m3u8
+    cp /tmp/$NODE_NAME/hls/$timestamp/live.m3u8 /mnt/audio-orcasound-net/$NODE_NAME/hls/$timestamp/live.m3u8
     ##nice -n -5 rsync -avW --progress --inplace --size-only /tmp/flac/$NODE_NAME /mnt/archive-orcasound-net
-    ##nice -n -5 rsync -avW --progress --inplace --size-only --exclude='*.tmp' --exclude '.live*' /tmp/$NODE_NAME /mnt/streaming-orcasound-net
+    ##nice -n -5 rsync -avW --progress --inplace --size-only --exclude='*.tmp' --exclude '.live*' /tmp/$NODE_NAME /mnt/audio-orcasound-net
   fi
 sleep $SEGMENT_DURATION
 done
