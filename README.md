@@ -28,7 +28,7 @@ An Arm or x86 device with a sound card (or other audio input device) connected t
 
 ### Installing
 
-Create a base docker image for your architecture by running the script in `orcanode/base/rpi` or `orcanode/base/amd64` as appropriate.  You will need to create a `orcanode/node/.env` file as appropriate for your projects.  Common to to all projects is the need for AWS keys
+Create a base docker image for your architecture by running the script in `orcanode/base/rpi` or `orcanode/base/amd64` as appropriate.  You will need to create a `orcanode/node/.env` file as appropriate for your projects.  Common to all projects is the need for AWS keys
 
 ```
 AWSACCESSKEYID=YourAWSaccessKey
@@ -38,7 +38,7 @@ SYSLOG_URL=syslog+tls://syslog-a.logdna.com:YourLogDNAPort
 SYSLOG_STRUCTURED_DATA='logdna@YourLogDNAnumber key="YourLogDNAKey" tag="docker"
 ```
 
-(You can request keys via the [#hydrophone-nodes channel in the Orcasound Zulip](https://orcasound.zulipchat.com/#narrow/channel/437036-hydrophone-nodes). As of October, 2024, we are continuing to use AWS S3 for storage and Mezmo for live-logging and troubleshooting.)
+(You can request keys via the [#hydrophone-nodes channel in the Orcasound Zulip](https://orcasound.zulipchat.com/#narrow/channel/437036-hydrophone-nodes). As of October 2024, we are continuing to use AWS S3 for storage and Mezmo for live-logging and troubleshooting.)
 
 Here are explanations of some of the `.env` fields:
 
