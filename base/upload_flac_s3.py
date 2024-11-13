@@ -1,19 +1,5 @@
 #!/usr/bin/env python3
 # Based on https://github.com/gergnz/s3autoloader/blob/master/s3autoloader.py
-# Needs to replace this code 
-# while true; do
-#   inotifywait -r -e close_write,create /tmp/$NODE_NAME /tmp/flac/$NODE_NAME
-#   echo "Running rsync on $NODE_NAME..."
-#   nice -n -5 rsync -rtv /tmp/flac/$NODE_NAME /mnt/dev-archive-orcasound-net
-#   nice -n -5 rsync -rtv /tmp/$NODE_NAME /mnt/dev-streaming-orcasound-net
-# done
-# #
-#
-#  Version 1 - just to hls
-#  Version 2 - + flac
-#
-#
-#
 
 from boto3.s3.transfer import S3Transfer
 import inotify.adapters
@@ -29,8 +15,7 @@ PATH = os.path.join(BASEPATH, "flac")
 # Paths to watch is /tmp/NODE_NAME an /tmp/flac/NODE_NAME
 # "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts"
 # "/tmp/flac/$NODE_NAME"
-# s3.Bucket(name='dev-archive-orcasound-net')  // flac
-# s3.Bucket(name='dev-streaming-orcasound-net') // hls 
+# s3.Bucket(name='dev-streaming-orcasound-net')
 
 
 REGION = os.environ["REGION"]
@@ -51,16 +36,15 @@ BUCKET = ""
 if "BUCKET_TYPE" in os.environ:
     if(os.environ["BUCKET_TYPE"] == "prod"):
         print("using production bucket")
-        BUCKET = 'archive-orcasound-net'
+        BUCKET = 'audio-orcasound-net'
     elif (os.environ["BUCKET_TYPE"] == "custom"):
         print("using custom bucket")
         BUCKET = os.environ["BUCKET_ARCHIVE"]
     else:
         print("using dev bucket")
-        BUCKET = "dev-archive-orcasound-net"
+        BUCKET = "dev-streaming-orcasound-net"
         
     log.debug("archive bucket set to ", BUCKET)
-
 
 def s3_copy_file(path, filename):
     log.debug('uploading file '+filename+' from '+path+' to bucket '+BUCKET)
@@ -72,8 +56,7 @@ def s3_copy_file(path, filename):
         uploadpath = os.path.relpath(path, "/tmp")
         uploadkey = os.path.join(uploadpath, filename, )
         log.debug('upload key: ' + uploadkey)
-        resource.meta.client.upload_file(uploadfile, BUCKET, uploadkey,
-                                         ExtraArgs={'ACL': 'public-read'})  # TODO have to build filename into correct key.
+        resource.meta.client.upload_file(uploadfile, BUCKET, uploadkey)  # TODO have to build filename into correct key.
         os.remove(path+'/'+filename)  # maybe not necessary since we write to /tmp and reboot every so often
     except:
         e = sys.exc_info()[0]

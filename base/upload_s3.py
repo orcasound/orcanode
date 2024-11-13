@@ -1,19 +1,5 @@
 #!/usr/bin/env python3
 # Based on https://github.com/gergnz/s3autoloader/blob/master/s3autoloader.py
-# Needs to replace this code 
-# while true; do
-#   inotifywait -r -e close_write,create /tmp/$NODE_NAME /tmp/flac/$NODE_NAME
-#   echo "Running rsync on $NODE_NAME..."
-#   nice -n -5 rsync -rtv /tmp/flac/$NODE_NAME /mnt/dev-archive-orcasound-net
-#   nice -n -5 rsync -rtv /tmp/$NODE_NAME /mnt/dev-streaming-orcasound-net
-# done
-# #
-#
-#  Version 1 - just to hls
-#  Version 2 - + flac
-#
-#
-#
 
 from boto3.s3.transfer import S3Transfer
 import inotify.adapters
@@ -29,10 +15,9 @@ PATH = os.path.join(BASEPATH, "hls")
 # Paths to watch is /tmp/NODE_NAME an /tmp/flac/NODE_NAME
 # "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts"
 # "/tmp/flac/$NODE_NAME"
-# s3.Bucket(name='dev-archive-orcasound-net')  // flac
-# s3.Bucket(name='dev-streaming-orcasound-net') // hls 
+# s3.Bucket(name='dev-streaming-orcasound-net')
 
-        
+
 REGION = os.environ["REGION"]
 LOGLEVEL = logging.DEBUG
 
@@ -56,9 +41,10 @@ if "BUCKET_TYPE" in os.environ:
         print("using custom bucket")
         BUCKET = os.environ["BUCKET_STREAMING"]
     else:
+        print("using dev bucket")
         BUCKET = "dev-streaming-orcasound-net"
-
-    log.debug("hls bucket set to "+BUCKET)
+        
+    log.debug("hls bucket set to ", BUCKET)
 
 def s3_copy_file(path, filename):
     log.debug('uploading file '+filename+' from '+path+' to bucket '+BUCKET)
