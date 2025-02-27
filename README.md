@@ -12,11 +12,11 @@ You can also gain some bioacoustic context for the project in the [orcanode wiki
 
 This code was developed for live-streaming from source nodes in the [Orcasound](http://orcasound.net) hydrophone network (WA, USA). Thus, the repository names begin with "orca"! Our primary motivation is to make it easy for community scientists to listen for whales via the [Orcasound web app](https://live.orcasound.net) using their favorite device/OS/browser.
 
-We also aspire to use open source software as much as possible. We rely heavily on [FFmpeg](https://www.ffmpeg.org/). One of our long-term goals is to stream lossless [FLAC](https://xiph.org/flac/)-encoded audio within [DASH](https://en.wikipedia.org/wiki/Dynamic_Adaptive_Streaming_over_HTTP) segments to a player that works optimally on as many listening devices as possible. For now (2018-2024) we have found the best end-to-end performance across the broadest range of web browsers is acheived by streaming AAC-encoded audio within [HLS](https://developer.apple.com/streaming/) segments. 
+We also aspire to use open source software as much as possible. We rely heavily on [FFmpeg](https://www.ffmpeg.org/). One of our long-term goals is to stream lossless [FLAC](https://xiph.org/flac/)-encoded audio within [DASH](https://en.wikipedia.org/wiki/Dynamic_Adaptive_Streaming_over_HTTP) segments to a player that works optimally on as many listening devices as possible. For now (2018-2025) we have found the best end-to-end performance across the broadest range of web browsers is acheived by streaming AAC-encoded audio within [HLS](https://developer.apple.com/streaming/) segments. 
 
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See the [deployment](#deployment) section for notes on how to deploy the project on a live system like [live.orcasound.net](https://live.orcasound.net).
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See the [deployment section](#deployment) for notes on how to deploy the project on a live system like [live.orcasound.net](https://live.orcasound.net).
 
 If you want to set up your hardware to host a hydrophone within the Orcasound network, take a look at [how to join Orcasound](http://www.orcasound.net/join/) and [our prototype built from a Raspberry Pi with the Pisound ADC HAT](http://www.orcasound.net/2018/04/27/orcasounds-new-live-audio-solution-from-hydrophone-to-headphone-with-a-raspberry-pi-computer-and-hls-dash-streaming-software/).
 
@@ -76,7 +76,7 @@ Here are explanations of some of the `.env` fields:
 
 ## Running local tests
 
-In the `node` directory (where you also put your .env file) first copy the compose file you want to `docker-compose.yml`.  For example, if you have a raspberry pi and you want to use the prebuilt image then copy `docker-compose.rpi-pull.yml` to `docker-compose.yml`.  Then run `docker-compose up -d`. Watch what happens using `htop`. If you want to verify files are being written to the `/tmp` or `/mnt` directories, get the name of your streaming service using `docker-compose ps` (in this case `orcanode_streaming_1`) and then do `docker exec -it orcanode_streaming_1 /bin/bash` to get a bash shell within the running container.
+In the `node` directory (where you also put your .env file) first copy the compose file you want to `docker-compose.yml`.  For example, if you have a Raspberry Pi and you want to use the prebuilt image then copy `docker-compose.rpi-pull.yml` to `docker-compose.yml`.  Then run `docker-compose up -d`. Watch what happens using `htop`. If you want to verify files are being written to the `/tmp` or `/mnt` directories, get the name of your streaming service using `docker-compose ps` (in this case `orcanode_streaming_1`) and then do `docker exec -it orcanode_streaming_1 /bin/bash` to get a bash shell within the running container.
 
 ## Running an end-to-end test
 
