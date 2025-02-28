@@ -4,7 +4,7 @@ The `orcanode` software repository contains audio tools and scripts for capturin
 
 There is a `base` set of tools and a couple of specific projects in the `node` and `mseed` directories. The `node` directory is for new locations streaming within the Orcasound listening network (primary nodes).
 
-The `mseed` directory has code for converting audio data in the mseed format to the live-streaming audio format used by primary nodes. This conversion code is mainly used for audio data collected by the [Ocean Observatories Initiative or OOI](https://oceanobservatories.org/ "OOI") network.  See the README in the `mseed` directory for more info. Transcoding from other audio formats should likely go in new directories by encoding scheme, similar to the mseed directory... 
+The `mseed` directory has code for converting audio data in the mseed format to the live-streaming audio format used by primary nodes. This conversion code is mainly used for audio data collected by the [Ocean Observatories Initiative or OOI](https://oceanobservatories.org/ "OOI") network.  See the README in the `mseed` directory for more info. Transcoding from other audio formats should likely go in new directories by encoding scheme, similar to the mseed directory.
 
 You can also gain some bioacoustic context for the project in the [orcanode wiki](https://github.com/orcasound/orcanode/wiki).
 
@@ -12,7 +12,7 @@ You can also gain some bioacoustic context for the project in the [orcanode wiki
 
 This code was developed for live-streaming from source nodes in the [Orcasound](http://orcasound.net) hydrophone network (WA, USA). Thus, the repository names begin with "orca"! Our primary motivation is to make it easy for community scientists to listen for whales via the [Orcasound web app](https://live.orcasound.net) using their favorite device/OS/browser.
 
-We also aspire to use open source software as much as possible. We rely heavily on [FFmpeg](https://www.ffmpeg.org/). One of our long-term goals is to stream lossless [FLAC](https://xiph.org/flac/)-encoded audio within [DASH](https://en.wikipedia.org/wiki/Dynamic_Adaptive_Streaming_over_HTTP) segments to a player that works optimally on as many listening devices as possible. For now (2018-2025) we have found the best end-to-end performance across the broadest range of web browsers is achieved by streaming AAC-encoded audio within [HLS](https://developer.apple.com/streaming/) segments. 
+We also aspire to use open-source software as much as possible. We rely heavily on [FFmpeg](https://www.ffmpeg.org/). One of our long-term goals is to stream lossless [FLAC](https://xiph.org/flac/)-encoded audio within [DASH](https://en.wikipedia.org/wiki/Dynamic_Adaptive_Streaming_over_HTTP) segments to a player that works optimally on as many listening devices as possible. For now (2018-2025) we have found the best end-to-end performance across the broadest range of web browsers is achieved by streaming AAC-encoded audio within [HLS](https://developer.apple.com/streaming/) segments. 
 
 ## Getting Started
 
@@ -28,7 +28,7 @@ An Arm or x86 device with a sound card (or other audio input device) connected t
 
 ### Installing
 
-Create a base docker image for your architecture by running the script in `orcanode/base/rpi` or `orcanode/base/amd64` as appropriate.  You will need to create a `orcanode/node/.env` file as appropriate for your projects.  Common to all projects is the need for AWS keys
+Create a base docker image for your architecture by running the script in `orcanode/base/rpi` or `orcanode/base/amd64` as appropriate.  You also will need to create an appropriate `orcanode/node/.env` file for your projects.  Common to all projects is the need for AWS keys
 
 ```
 AWSACCESSKEYID=YourAWSaccessKey
@@ -44,7 +44,7 @@ Here are explanations of some of the `.env` fields:
 
 * NODE_NAME should indicate your device and its location, ideally in the form `device_location` (e.g., we call our Raspberry Pi staging device in Seattle `rpi_seattle`). 
 * NODE_TYPE determines what audio data formats will be generated and transferred to their respective AWS buckets. 
-* AUDIO_HW_ID is the card, device providing the audio data. Note: you can find your sound device by using the command `arecord -l`.  For Raspberry Pi hardware with pisound just use `AUDIO_HW_ID=pisound`
+* AUDIO_HW_ID is the card, device providing the audio data. Note: you can find your sound device by using the command `arecord -l`.  For Raspberry Pi hardware with pisound, just use `AUDIO_HW_ID=pisound`
 * CHANNELS indicates the number of audio channels to expect (1 or 2). 
 * FLAC_DURATION is the amount of seconds you want in each archived lossless file. 
 * SEGMENT_DURATION is the amount of seconds you want in each streamed lossy segment.
