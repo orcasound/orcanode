@@ -42,9 +42,9 @@ SYSLOG_STRUCTURED_DATA='logdna@YourLogDNAnumber key="YourLogDNAKey" tag="docker"
 
 Here are explanations of some of the `.env` fields:
 
-* NODE_NAME should indicate your device and it's location, ideally in the form `device_location` (e.g., we call our Raspberry Pi staging device in Seattle `rpi_seattle`. 
+* NODE_NAME should indicate your device and it's location, ideally in the form `device_location` (e.g., we call our Raspberry Pi staging device in Seattle `rpi_seattle`). 
 * NODE_TYPE determines what audio data formats will be generated and transferred to their respective AWS buckets. 
-* AUDIO_HW_ID is the card, device providing the audio data. Note: you can find your sound device by using the command `arecord -l`.  For Raspberry Pi hardware with pisound just use AUDIO_HW_ID=pisound
+* AUDIO_HW_ID is the card, device providing the audio data. Note: you can find your sound device by using the command `arecord -l`.  For Raspberry Pi hardware with pisound just use `AUDIO_HW_ID=pisound`
 * CHANNELS indicates the number of audio channels to expect (1 or 2). 
 * FLAC_DURATION is the amount of seconds you want in each archived lossless file. 
 * SEGMENT_DURATION is the amount of seconds you want in each streamed lossy segment.
@@ -76,7 +76,7 @@ Here are explanations of some of the `.env` fields:
 
 ## Running local tests
 
-In the `node` directory (where you also put your .env file) first copy the compose file you want to `docker-compose.yml`.  For example, if you have a Raspberry Pi and you want to use the prebuilt image then copy `docker-compose.rpi-pull.yml` to `docker-compose.yml`.  Then run `docker-compose up -d`. Watch what happens using `htop`. If you want to verify files are being written to the `/tmp` or `/mnt` directories, get the name of your streaming service using `docker-compose ps` (in this case `orcanode_streaming_1`) and then do `docker exec -it orcanode_streaming_1 /bin/bash` to get a bash shell within the running container.
+In the `node` directory (where you also put your .env file) first copy the compose file you want to `docker-compose.yml`.  For example, if you have a Raspberry Pi and you want to use the prebuilt image, then copy `docker-compose.rpi-pull.yml` to `docker-compose.yml`.  Then run `docker-compose up -d`. Watch what happens using `htop`. If you want to verify files are being written to the `/tmp` or `/mnt` directories, get the name of your streaming service using `docker-compose ps` (in this case `orcanode_streaming_1`) and then do `docker exec -it orcanode_streaming_1 /bin/bash` to get a bash shell within the running container.
 
 ## Running an end-to-end test
 
