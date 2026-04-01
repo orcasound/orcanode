@@ -66,6 +66,7 @@ if [ $NODE_TYPE = "research" ]; then
        -ar $STREAM_RATE -ac 2 -acodec aac \
        -f hls -hls_time $SEGMENT_DURATION -hls_list_size 10 \
        -hls_flags delete_segments+append_list+program_date_time \
+       -hls_segment_filename "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" \
        "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" >/dev/null 2>/dev/null &
 elif [ $NODE_TYPE = "debug" ]; then
 	echo "Sampling $CHANNELS channels from $AUDIO_HW_ID at $SAMPLE_RATE Hz with bitrate of 32 bits/sample..."
@@ -85,6 +86,7 @@ elif [ $NODE_TYPE = "hls-only" ]; then
 	    -ar $STREAM_RATE -ac $CHANNELS -threads 3 -acodec aac \
 	    -f hls -hls_time $SEGMENT_DURATION -hls_list_size 10 \
 	    -hls_flags delete_segments+append_list+program_date_time \
+	    -hls_segment_filename "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" \
 	    "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" &
 	else
 	    ## amd64 alsa
@@ -92,6 +94,7 @@ elif [ $NODE_TYPE = "hls-only" ]; then
 	    -ar $STREAM_RATE -ac $CHANNELS -threads 3 -acodec aac \
 	    -f hls -hls_time $SEGMENT_DURATION -hls_list_size 10 \
 	    -hls_flags delete_segments+append_list+program_date_time \
+	    -hls_segment_filename "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" \
 	    "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" &
   
         fi
