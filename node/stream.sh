@@ -63,8 +63,10 @@ if [ $NODE_TYPE = "research" ]; then
 	## Streaming HLS with FLAC archive 
 	nice -n -10 ffmpeg -f jack -i ffjack \
        -f segment -segment_time "00:00:$FLAC_DURATION.00" -strftime 1 "/tmp/$NODE_NAME/flac/%Y-%m-%d_%H-%M-%S_$NODE_NAME-$SAMPLE_RATE-$CHANNELS.flac" \
-       -f segment -segment_list "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format \
-       mpegts -ar $STREAM_RATE -ac 2 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" >/dev/null 2>/dev/null &
+       -ar $STREAM_RATE -ac 2 -acodec aac \
+       -f hls -hls_time $SEGMENT_DURATION -hls_list_size 10 \
+       -hls_flags delete_segments+append_list+program_date_time \
+       "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" >/dev/null 2>/dev/null &
 elif [ $NODE_TYPE = "debug" ]; then
 	echo "Sampling $CHANNELS channels from $AUDIO_HW_ID at $SAMPLE_RATE Hz with bitrate of 32 bits/sample..."
         echo "Asking ffmpeg to stream DASH via mpegts at $STREAM_RATE Hz..." 
@@ -79,10 +81,18 @@ elif [ $NODE_TYPE = "hls-only" ]; then
   	## Streaming HLS only via mpegts
 	if [ $NODE_ARCH = "arm32v7" ]; then
 	## rpi, jack    
-	    nice -n -10 ffmpeg -f jack -i ffjack -f segment -segment_list "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac $CHANNELS -threads 3 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" &
+	    nice -n -10 ffmpeg -f jack -i ffjack \
+	    -ar $STREAM_RATE -ac $CHANNELS -threads 3 -acodec aac \
+	    -f hls -hls_time $SEGMENT_DURATION -hls_list_size 10 \
+	    -hls_flags delete_segments+append_list+program_date_time \
+	    "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" &
 	else
 	    ## amd64 alsa
-	    	    nice -n -10 ffmpeg -f alsa -ac 2 -ar $SAMPLE_RATE -thread_queue_size 1024 -i hw:$AUDIO_HW_ID -f segment -segment_list "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac $CHANNELS -threads 3 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" &
+	    	    nice -n -10 ffmpeg -f alsa -ac 2 -ar $SAMPLE_RATE -thread_queue_size 1024 -i hw:$AUDIO_HW_ID \
+	    -ar $STREAM_RATE -ac $CHANNELS -threads 3 -acodec aac \
+	    -f hls -hls_time $SEGMENT_DURATION -hls_list_size 10 \
+	    -hls_flags delete_segments+append_list+program_date_time \
+	    "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" &
   
         fi
 elif [ $NODE_TYPE = "dev-virt-s3" ]; then
@@ -92,8 +102,10 @@ elif [ $NODE_TYPE = "dev-virt-s3" ]; then
     echo "Asking ffmpeg to stream only HLS segments at $STREAM_RATE Hz......" 
     ## Streaming HLS only via mpegts
   nice -n -10 ffmpeg -re -fflags +genpts -stream_loop -1 -i "samples/haro-strait_2005.wav" \
-    -f segment -segment_list "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts \
-    -ar $STREAM_RATE -ac $CHANNELS -threads 3 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" &
+    -ar $STREAM_RATE -ac $CHANNELS -threads 3 -acodec aac \
+    -f hls -hls_time $SEGMENT_DURATION -hls_list_size 10 \
+    -hls_flags delete_segments+append_list+program_date_time \
+    "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" &
 else
         echo "unsupported please pick hls-only, research, or dev-virt-s3"
 fi
