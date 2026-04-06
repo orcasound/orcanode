@@ -4,7 +4,7 @@ services:
     # (temporary) skip the image name so that any previously pulled image doesn't get overwritten
     #image: orcasound/orcanode
     build: ./
-    command: ./stream.sh
+    command: ./streamrpi.sh
     restart: always
     env_file: .env
     ports:
