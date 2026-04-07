@@ -72,7 +72,7 @@ These steps assume **Raspberry Pi OS Trixie (64-bit)** and a Pisound HAT (or com
 
 ### 1. Flash and first boot
 
-Flash Raspberry Pi OS (Bookworm Lite recommended) using [Raspberry Pi Imager](https://www.raspberrypi.com/software/). Enable SSH and set hostname/credentials in the imager's advanced settings before writing.
+Flash Raspberry Pi OS (Trixie Lite recommended) using [Raspberry Pi Imager](https://www.raspberrypi.com/software/). Enable SSH and set hostname/credentials in the imager's advanced settings before writing.
 
 ### 2. Update the system
 
