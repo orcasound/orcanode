@@ -1,0 +1,19 @@
+# Environment / secrets — never commit credentials
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+*.egg-info/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs and temp output
+*.log
+/tmp/

@@ -1,0 +1,42 @@
+Login to node:
+ssh pi@<your-node-hostname-or-ip>
+
+Edit the orcanode.service file:
+sudo nano /etc/systemd/system/orcanode.service
+
+Reload and restart after editing the service file:
+sudo systemctl daemon-reload
+sudo systemctl restart orcanode
+
+--- SERVICE MANAGEMENT ---
+sudo systemctl enable orcanode   # start on boot
+sudo systemctl start orcanode
+sudo systemctl stop orcanode
+sudo systemctl restart orcanode
+journalctl -u orcanode -f        # live logs
+
+--- DIAGNOSTICS ---
+
+Is ffmpeg actually running?
+  ps aux | grep ffmpeg
+
+What did ffmpeg say when it tried to start?
+  cat /tmp/<NODE_NAME>/ffmpeg.log
+
+Are there any HLS files at all?
+  ls -la /tmp/<NODE_NAME>/hls/
+
+Are the HLS segments actually there?
+  ls /tmp/<NODE_NAME>/hls/<timestamp>/ | tail -20
+
+What is upload_s3.py actually logging?
+  sudo journalctl -u orcanode | grep upload_s3 | tail -30
+
+Check if out of memory:
+  sudo dmesg | grep -E "oom|killed|Out of memory" | tail -10
+
+Check JACK ports:
+  jack_lsp
+
+Check ALSA devices (find your AUDIO_HW_ID):
+  aplay -l

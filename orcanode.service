@@ -1,0 +1,17 @@
+[Unit]
+Description=Orcasound Node Streaming
+After=network-online.target sound.target
+Wants=network-online.target
+
+[Service]
+User=pi
+WorkingDirectory=/home/pi/orcanode/node
+EnvironmentFile=/home/pi/orcanode/node/.env
+ExecStart=/bin/bash /home/pi/orcanode/node/stream_sync.sh
+Restart=on-failure
+RestartSec=15
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
