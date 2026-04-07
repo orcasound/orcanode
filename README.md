@@ -68,7 +68,7 @@ Each time the service starts, `stream_sync.sh` records a Unix timestamp and crea
 
 ## Setup on a fresh Raspberry Pi 4
 
-These steps assume **Raspberry Pi OS Bookworm (64-bit)** and a Pisound HAT (or compatible ALSA audio interface). Run all commands as the `pi` user unless otherwise noted.
+These steps assume **Raspberry Pi OS Trixie (64-bit)** and a Pisound HAT (or compatible ALSA audio interface). Bookworm also works. Run all commands as the `pi` user unless otherwise noted.
 
 ### 1. Flash and first boot
 

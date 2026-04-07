@@ -1,6 +1,6 @@
 #!/bin/bash
 # One-time setup script for hydrophone streaming node (dockerless)
-# Run once on a fresh Raspberry Pi OS (Bookworm or later)
+# Run once on a fresh Raspberry Pi OS (Trixie recommended; Bookworm also works)
 
 set -e  # Exit immediately if any command fails
 
