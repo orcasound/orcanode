@@ -53,8 +53,11 @@ else
     JACKD_RT=""
 fi
 
-#  Setup jack
-JACK_NO_AUDIO_RESERVATION=1 jackd -t 2000 $JACKD_RT -d alsa -d hw:$AUDIO_HW_ID -r $SAMPLE_RATE -p 1024 -n 10 -s &
+# Setup jack only for hardware-based audio capture
+if [ "$NODE_TYPE" != "dev-virt-s3" ]; then
+    echo "Starting Jack audio server for hardware audio capture..."
+    JACK_NO_AUDIO_RESERVATION=1 jackd -t 2000 $JACKD_RT -d alsa -d hw:$AUDIO_HW_ID -r $SAMPLE_RATE -p 1024 -n 10 -s &
+fi
 
 #### Generate stream segments and manifests, and/or lossless archive
 
@@ -91,7 +94,7 @@ elif [ "$NODE_TYPE" = "hls-only" ]; then
 elif [ "$NODE_TYPE" = "dev-virt-s3" ]; then
     SAMPLE_RATE=48000
     STREAM_RATE=48000
-  echo "Sampling from $AUDIO_HW_ID at $SAMPLE_RATE Hz..."
+  echo "Sampling from virtual WAV file at $SAMPLE_RATE Hz..."
     echo "Asking ffmpeg to stream only HLS segments at $STREAM_RATE Hz......" 
     ## Streaming HLS only via mpegts
   $NICE_HIGH ffmpeg -re -fflags +genpts -stream_loop -1 -i "samples/haro-strait_2005.wav" \
@@ -101,14 +104,17 @@ else
         echo "unsupported please pick hls-only, research, or dev-virt-s3"
 fi
 
-# takes a second for ffmpeg to make ffjack connection before we can connect
-sleep 3
-jack_connect system:capture_1 ffjack:input_1
-jack_connect system:capture_2 ffjack:input_2
+# Connect jack audio routing only for hardware-based modes
+if [ "$NODE_TYPE" != "dev-virt-s3" ]; then
+    # takes a second for ffmpeg to make ffjack connection before we can connect
+    sleep 3
+    jack_connect system:capture_1 ffjack:input_1
+    jack_connect system:capture_2 ffjack:input_2
 
-if [ "$NODE_LOOPBACK" = "true" ]; then
-    jack_connect system:capture_1 system:playback_1
-    jack_connect system:capture_2 system:playback_2
+    if [ "$NODE_LOOPBACK" = "true" ]; then
+        jack_connect system:capture_1 system:playback_1
+        jack_connect system:capture_2 system:playback_2
+    fi
 fi
 
 if [ "$NODE_LOOPBACK" = "hls" ]; then
