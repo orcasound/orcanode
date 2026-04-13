@@ -50,5 +50,9 @@ RUN if [ -f .env.example ]; then \
         echo "Warning: .env.example not found"; \
     fi
 
+# Configure audio group limits for Jack
+RUN echo '@audio - memlock 256000' >> /etc/security/limits.conf && \
+    echo '@audio - rtprio 75' >> /etc/security/limits.conf
+
 # Run the streaming script
 CMD ["./stream.sh"]

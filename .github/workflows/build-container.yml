@@ -51,26 +51,32 @@ jobs:
           sed -i 's/key="FILLTHISIN"/key="test-logdna-key"/g' test.env
           sed -i 's/NODE_NAME=rpi_location/NODE_NAME=rpi_github_ci/g' test.env
 
-          # Disable loopback testing since CI environments won't have audio hardware.
+          # Use dev-virt-s3 mode for CI (no audio hardware required).
+          sed -i 's/NODE_TYPE=hls-only/NODE_TYPE=dev-virt-s3/g' test.env
           sed -i 's/NODE_LOOPBACK=true/NODE_LOOPBACK=false/g' test.env
 
           # Start container with env file.
           docker run -d --name orcanode-test \
             --env-file test.env \
-            orcanode:test || true
+            orcanode:test
 
-          sleep 5
+          sleep 10
           echo "=== Container logs ==="
           docker logs orcanode-test
 
-          # Check container health: accept running or cleanly exited (exit code 0)
+          # Check container health: accept running or cleanly exited (exit code 0).
           STATUS=$(docker inspect --format='{{.State.Status}}' orcanode-test)
           EXIT_CODE=$(docker inspect --format='{{.State.ExitCode}}' orcanode-test)
-          
+
           echo "Container status: $STATUS, exit code: $EXIT_CODE"
-          
+
           if [ "$STATUS" = "running" ]; then
-            echo "Container is running (audio hardware errors expected in CI)"
+            echo "Container is running"
+
+            # Verify HLS segments are being generated.
+            docker exec orcanode-test ls -la /tmp/rpi_github_ci/hls/
+
+            echo "Container is generating HLS stream"
           elif [ "$STATUS" = "exited" ] && [ "$EXIT_CODE" = "0" ]; then
             echo "Container exited cleanly (exit code 0)"
           else
