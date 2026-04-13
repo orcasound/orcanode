@@ -40,7 +40,7 @@ jobs:
       - name: Verify application scripts are present
         run: docker run --rm orcanode:test ls -la /app/stream.sh
 
-      - name: Test container startup
+      - name: Test container startup with dev-virt-s3
         run: |
           # Copy .env.example to test.env and customize for CI.
           cp node/.env.example test.env
@@ -56,17 +56,17 @@ jobs:
           sed -i 's/NODE_LOOPBACK=true/NODE_LOOPBACK=false/g' test.env
 
           # Start container with env file.
-          docker run -d --name orcanode-test \
+          docker run -d --name orcanode-test-virt \
             --env-file test.env \
             orcanode:test
 
           sleep 10
           echo "=== Container logs ==="
-          docker logs orcanode-test
+          docker logs orcanode-test-virt
 
           # Check container health: accept running or cleanly exited (exit code 0).
-          STATUS=$(docker inspect --format='{{.State.Status}}' orcanode-test)
-          EXIT_CODE=$(docker inspect --format='{{.State.ExitCode}}' orcanode-test)
+          STATUS=$(docker inspect --format='{{.State.Status}}' orcanode-test-virt)
+          EXIT_CODE=$(docker inspect --format='{{.State.ExitCode}}' orcanode-test-virt)
 
           echo "Container status: $STATUS, exit code: $EXIT_CODE"
 
@@ -74,7 +74,7 @@ jobs:
             echo "Container is running"
 
             # Verify HLS segments are being generated.
-            docker exec orcanode-test ls -la /tmp/rpi_github_ci/hls/
+            docker exec orcanode-test-virt ls -la /tmp/rpi_github_ci/hls/
 
             echo "Container is generating HLS stream"
           elif [ "$STATUS" = "exited" ] && [ "$EXIT_CODE" = "0" ]; then
@@ -84,8 +84,49 @@ jobs:
             exit 1
           fi
 
-          docker stop orcanode-test || true
-          docker rm orcanode-test
+          docker stop orcanode-test-virt || true
+          docker rm orcanode-test-virt
+          rm test.env
+
+      - name: Test container startup with hls-only (hardware path)
+        run: |
+          # Copy .env.example to test.env and customize for CI.
+          cp node/.env.example test.env
+
+          # Replace FILLTHISIN placeholders with test values.
+          sed -i 's/AWS_ACCESS_KEY_ID=FILLTHISIN/AWS_ACCESS_KEY_ID=test-key-id/g' test.env
+          sed -i 's/AWS_SECRET_ACCESS_KEY=FILLTHISIN/AWS_SECRET_ACCESS_KEY=test-secret/g' test.env
+          sed -i 's/key="FILLTHISIN"/key="test-logdna-key"/g' test.env
+          sed -i 's/NODE_NAME=rpi_location/NODE_NAME=rpi_github_ci_hw/g' test.env
+          
+          # Keep default NODE_TYPE=hls-only (tests hardware audio path)
+
+          # Start container with env file.
+          docker run -d --name orcanode-test-hw \
+            --env-file test.env \
+            orcanode:test
+
+          sleep 5
+          echo "=== Container logs (hls-only mode) ==="
+          docker logs orcanode-test-hw
+
+          # Check container health
+          STATUS=$(docker inspect --format='{{.State.Status}}' orcanode-test-hw)
+          EXIT_CODE=$(docker inspect --format='{{.State.ExitCode}}' orcanode-test-hw)
+          
+          echo "Container status: $STATUS, exit code: $EXIT_CODE"
+          
+          if [ "$STATUS" = "running" ]; then
+            echo "✓ Container is running (hls-only mode, audio hardware errors expected)"
+          elif [ "$STATUS" = "exited" ] && [ "$EXIT_CODE" = "0" ]; then
+            echo "✓ Container exited cleanly (exit code 0)"
+          else
+            echo "✗ Container failed with status: $STATUS, exit code: $EXIT_CODE"
+            exit 1
+          fi
+
+          docker stop orcanode-test-hw || true
+          docker rm orcanode-test-hw
           rm test.env
 
   build-and-push:
