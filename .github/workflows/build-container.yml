@@ -1,0 +1,136 @@
+name: Build and Test Orcanode Container
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'node/**'
+      - 'base/**'
+      - '.github/workflows/build-container.yml'
+    tags:
+      - 'v*.*.*'  # Trigger on version tags.
+  pull_request:
+    paths:
+      - 'node/**'
+      - 'base/**'
+      - '.github/workflows/build-container.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Build container image
+        run: docker build -t orcanode:test -f node/Dockerfile .
+
+      - name: Verify Python is available
+        run: docker run --rm orcanode:test python3 --version
+
+      - name: Verify FFmpeg is installed
+        run: docker run --rm orcanode:test ffmpeg -version
+
+      - name: Verify Jack audio is installed
+        run: docker run --rm orcanode:test which jackd
+
+      - name: Verify Python dependencies
+        run: docker run --rm orcanode:test python3 -c "import boto3; import inotify; print('Python deps OK')"
+
+      - name: Verify application scripts are present
+        run: docker run --rm orcanode:test ls -la /app/stream.sh
+
+      - name: Test container startup
+        run: |
+          # Copy .env.example to test.env and customize for CI.
+          cp node/.env.example test.env
+
+          # Replace FILLTHISIN placeholders with test values.
+          sed -i 's/AWS_ACCESS_KEY_ID=FILLTHISIN/AWS_ACCESS_KEY_ID=test-key-id/g' test.env
+          sed -i 's/AWS_SECRET_ACCESS_KEY=FILLTHISIN/AWS_SECRET_ACCESS_KEY=test-secret/g' test.env
+          sed -i 's/key="FILLTHISIN"/key="test-logdna-key"/g' test.env
+          sed -i 's/NODE_NAME=rpi_location/NODE_NAME=rpi_github_ci/g' test.env
+
+          # Disable loopback testing since CI environments won't have audio hardware.
+          sed -i 's/NODE_LOOPBACK=true/NODE_LOOPBACK=false/g' test.env
+
+          # Start container with env file.
+          docker run -d --name orcanode-test \
+            --env-file test.env \
+            orcanode:test || true
+
+          sleep 5
+          echo "=== Container logs ==="
+          docker logs orcanode-test
+
+          # Check container health: accept running or cleanly exited (exit code 0)
+          STATUS=$(docker inspect --format='{{.State.Status}}' orcanode-test)
+          EXIT_CODE=$(docker inspect --format='{{.State.ExitCode}}' orcanode-test)
+          
+          echo "Container status: $STATUS, exit code: $EXIT_CODE"
+          
+          if [ "$STATUS" = "running" ]; then
+            echo "Container is running (audio hardware errors expected in CI)"
+          elif [ "$STATUS" = "exited" ] && [ "$EXIT_CODE" = "0" ]; then
+            echo "Container exited cleanly (exit code 0)"
+          else
+            echo "Container failed with status: $STATUS, exit code: $EXIT_CODE"
+            exit 1
+          fi
+
+          docker stop orcanode-test || true
+          docker rm orcanode-test
+          rm test.env
+
+  build-and-push:
+    needs: test
+    if: github.ref == 'refs/heads/main' || github.ref_type == 'tag' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      actions: write  # Required for cache-to: type=gha
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@49b3bc8e6bdd4a60e6116a5414239cba5943d3cf # v3.2.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@988b5a0280414f521da01fcc63a27aeeb4b104db # v3.6.1
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81 # v5.5.1
+        with:
+          images: ghcr.io/${{ github.repository }}/orcanode
+          tags: |
+            # Semver tags on release
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            # Branch-based tags
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            # Latest tag for main branch
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push multi-arch images
+        uses: docker/build-push-action@5cd11c3a4ced054e52742c5fd54dca954e0edd85 # v6.7.0
+        with:
+          context: .
+          file: ./node/Dockerfile
+          platforms: linux/amd64,linux/arm/v7,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
