@@ -2,11 +2,9 @@ name: Build and Test Orcanode Container
 
 on:
   push:
-    branches: [main]
-    paths:
-      - 'node/**'
-      - 'base/**'
-      - '.github/workflows/build-container.yml'
+    branches:
+      - main
+      - container-release
     tags:
       - 'v*.*.*'  # Trigger on version tags.
   pull_request:
@@ -131,7 +129,7 @@ jobs:
 
   build-and-push:
     needs: test
-    if: github.ref == 'refs/heads/main' || github.ref_type == 'tag' || github.event_name == 'workflow_dispatch'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/container-release' || github.ref_type == 'tag' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -164,9 +162,10 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
+            type=ref,event=tag
             # Branch-based tags
             type=ref,event=branch
-            type=sha,prefix={{branch}}-
+            type=sha
             # Latest tag for main branch
             type=raw,value=latest,enable={{is_default_branch}}
 
