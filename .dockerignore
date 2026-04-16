@@ -1,0 +1,44 @@
+# Ignore environment files with secrets
+.env
+**/.env
+*.env
+node/.env
+base/.env
+
+# Ignore git repository
+.git
+.gitignore
+.gitattributes
+
+# Ignore node modules (if any)
+**/node_modules
+
+# Ignore security-sensitive files
+**/*.pem
+**/*.key
+**/*.crt
+**/*.p12
+**/*.pfx
+**/*.jks
+
+# Ignore backup and temporary files
+**/*.bak
+**/*.swp
+**/*.swo
+**/*~
+**/.DS_Store
+
+# Ignore IDE and editor files
+.vscode/
+.idea/
+*.code-workspace
+
+# Ignore CI/CD artifacts (already in repo, but exclude from build context)
+.github/
+
+# Ignore documentation
+*.md
+!node/README.md
+
+# Keep .env.example (it's a template, not secrets)
+!**/.env.example
