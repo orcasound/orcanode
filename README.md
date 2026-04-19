@@ -1,50 +1,95 @@
-# Orcanode — Dockerless Hydrophone Streaming Node
+# Orcanode — Dockerless Hydrophone Streaming Node (with /tmp Queue Management)
 
 A lightweight, Docker-free streaming node for the [Orcasound](https://www.orcasound.net) hydrophone network. Audio is captured from a [Pisound HAT](https://blokas.io/pisound/) (or any ALSA-compatible device), encoded to HLS by ffmpeg, and uploaded in near-real-time to AWS S3 for playback in the Orcasound web app.
 
+This variant adds **bounded /tmp storage** and **background catchup uploads** to handle intermittent connectivity on a Raspberry Pi with a 32–64 GB SD card.
+
 ---
 
-## How it works
+## The /tmp storage problem and solution
+
+### What goes wrong without queue management
+
+Each service session creates a new timestamped HLS directory in `/tmp/<NODE_NAME>/hls/<timestamp>/`. ffmpeg writes 10-second MPEG-TS segments there continuously; `upload_s3.py` removes each file after a successful S3 upload. Under normal conditions, only a handful of segments ever accumulate locally.
+
+When internet connectivity drops, uploads fail but ffmpeg keeps writing. Segments pile up in the current session's directory. When the service restarts (e.g. on reboot or after a JACK crash), a **new** session directory is created — but the old directory, with all its unuploaded segments, is never touched again. Over days or weeks of intermittent connectivity, these orphaned directories can fill the SD card.
+
+### How this version solves it
+
+Two mechanisms work together:
+
+**1. Hard disk limit at startup (`prune_old_hls_dirs` in `stream_sync.sh`)**
+
+Before starting the new session, the script counts existing old HLS directories. If there are more than `MAX_HLS_DIRS - 1` (default: 7 old + 1 current = 8 total), the oldest directories are deleted immediately. This is a hard safety valve that guarantees `/tmp` stays bounded even after extended outages.
+
+**2. Background catchup uploader (`upload_old_hls.py`)**
+
+After pruning, a background process scans for old HLS directories and uploads their content to S3, then deletes each directory. It runs at a lower CPU priority (`nice +10`) so it never competes with the real-time uploader.
+
+For each old directory it:
+- Builds a **proper VOD HLS manifest** (`vod.m3u8`) listing all remaining `.ts` files — the original `live.m3u8` written by ffmpeg is a rolling 5-segment live manifest and is incomplete for historical playback.
+- Uploads segments newest-directory-first (most recent audio reaches S3 soonest after an outage).
+- Sleeps briefly between file uploads so the real-time uploader has priority on the network connection.
+- Deletes the directory only after every upload succeeds. If any upload fails, the directory is left in place and retried on the next service start.
+
+---
+
+## Architecture
 
 ```
-Hydrophone
-    │
-    ▼
-Pisound HAT (USB or I2S audio interface)
-    │  ALSA (hw:pisound)
-    ▼
-jackd  ─────────────────────────────────────────────────────────────┐
-    │  JACK audio graph                                              │
-    │  system:capture_1/2  →  ffjack:input_1/2                      │
-    ▼                                                                │
-ffmpeg (-f jack -i ffjack)                                  [loopback]
-    │                                                       system:playback
-    │  Encode: PCM → AAC @ 48 kHz
-    │  Segment: 10-second MPEG-TS chunks
-    ▼
-/tmp/<NODE_NAME>/hls/<timestamp>/
-    ├── live.m3u8          ← rolling HLS manifest (5 segments)
-    ├── live000.ts
-    ├── live001.ts
-    └── ...
-    │
-    ▼ (inotify IN_CLOSE_WRITE / IN_MOVED_TO)
-upload_s3.py
-    │  • Checks file size (skips empties)
-    │  • Computes RMS audio level (warns on silence)
-    │  • Uploads to S3 with key: <NODE_NAME>/hls/<timestamp>/<file>
-    │  • After first .ts segment: uploads latest.txt
-    ▼
-S3 bucket  (audio-orcasound-net  or  dev-streaming-orcasound-net)
-    └── <NODE_NAME>/hls/<timestamp>/live.m3u8  ← Orcasound player reads this
+stream_sync.sh (on service start)
+  │
+  ├─ [1] prune_old_hls_dirs()
+  │       • counts HLS session dirs in /tmp
+  │       • deletes oldest if count > MAX_HLS_DIRS
+  │
+  ├─ [2] jackd  ──────────────────────────────────────────────────┐
+  │         system:capture_1/2 → ffjack:input_1/2                 │
+  │                                                         [optional
+  ├─ [3] ffmpeg (-f jack -i ffjack)                        loopback]
+  │         PCM → AAC @ 48 kHz, 10-second MPEG-TS segments
+  │         writes to /tmp/<NODE_NAME>/hls/<current_ts>/
+  │              live.m3u8  (rolling, 5-segment live manifest)
+  │              live000.ts, live001.ts, …
+  │
+  ├─ [4] upload_s3.py  (foreground, real-time priority)
+  │         inotify IN_CLOSE_WRITE / IN_MOVED_TO on current_ts dir
+  │         • validates file size
+  │         • computes RMS (warns on silence)
+  │         • uploads to S3: <NODE_NAME>/hls/<current_ts>/<file>
+  │         • removes local file after confirmed upload
+  │         • after first .ts: uploads latest.txt so player can find stream
+  │
+  └─ [5] upload_old_hls.py  (background, nice +10)
+            scans /tmp/<NODE_NAME>/hls/ for dirs != current_ts
+            for each old dir (newest-first):
+              • builds vod.m3u8 from remaining .ts files
+              • uploads segments + manifests to S3
+              • deletes directory after all uploads confirmed
+            exits when backlog is clear
 ```
 
-### Key files
+### Disk space bounds
+
+With default `MAX_HLS_DIRS=8` and 10-second segments at ~160 kbps AAC:
+
+| Scenario | Storage |
+|---|---|
+| Normal operation (uploads keeping up) | < 5 MB |
+| 1-hour internet outage (one session) | ~72 MB |
+| 8 sessions capped by MAX_HLS_DIRS | ~576 MB worst case |
+
+Adjust `MAX_HLS_DIRS` in `stream_sync.sh` to trade off historical coverage vs. disk safety. A value of 4–6 is conservative for a 32 GB card.
+
+---
+
+## Key files
 
 | File | Purpose |
 |---|---|
-| `stream_sync.sh` | Main orchestration script. Waits for NTP sync, starts jackd, runs ffmpeg, connects JACK ports, launches uploader. |
-| `upload_s3.py` | Watches HLS output dir with inotify; uploads each completed segment and manifest to S3. |
+| `stream_sync.sh` | Main orchestration. Prunes old HLS dirs, starts jackd + ffmpeg, launches uploaders. |
+| `upload_s3.py` | Real-time uploader. Watches current session dir via inotify; uploads and deletes each segment as it is written. |
+| `upload_old_hls.py` | Background catchup uploader. Processes old session directories on startup, builds VOD manifests, uploads, and deletes. |
 | `orcanode.service` | Systemd unit that runs `stream_sync.sh` as the `pi` user on boot. |
 | `setup.sh` | One-time dependency installer (jackd2, ffmpeg, Python venv). |
 | `limits.conf` | PAM limits that grant the `audio` group real-time scheduling priority (required by JACK). |
@@ -203,14 +248,20 @@ journalctl -u orcanode -f
 # Confirm ffmpeg is running
 ps aux | grep ffmpeg
 
-# Check that HLS segments are being created
-ls -la /tmp/rpi_orcasound_lab/hls/
+# Check HLS session directories (should see current + any being caught up)
+ls -lt /tmp/rpi_orcasound_lab/hls/
 
 # Check ffmpeg's own log
 cat /tmp/rpi_orcasound_lab/ffmpeg.log
 
 # Check for out-of-memory kills
 sudo dmesg | grep -E "oom|killed|Out of memory" | tail -10
+```
+
+To monitor disk usage of the HLS queue:
+
+```bash
+du -sh /tmp/rpi_orcasound_lab/hls/*/
 ```
 
 ---
@@ -224,7 +275,8 @@ sudo systemctl restart orcanode    # restart
 sudo systemctl status orcanode     # quick status
 
 journalctl -u orcanode -f          # live logs
-journalctl -u orcanode | grep upload_s3 | tail -30   # upload activity
+journalctl -u orcanode | grep upload_s3 | tail -30        # real-time upload activity
+journalctl -u orcanode | grep upload_old_hls | tail -30   # backlog upload activity
 ```
 
 ### SSH access via Tailscale
@@ -242,6 +294,8 @@ ssh pi@<your-node>.tail70a76c.ts.net
 | Service won't start | `journalctl -u orcanode -f` |
 | No audio / silence warnings | `cat /tmp/<NODE_NAME>/ffmpeg.log` |
 | S3 uploads failing | `journalctl -u orcanode \| grep upload_s3` |
+| Old session dirs not being cleaned up | `journalctl -u orcanode \| grep upload_old_hls` — check for upload errors |
+| /tmp still growing despite MAX_HLS_DIRS | Lower `MAX_HLS_DIRS` in `stream_sync.sh`; check that pruning log lines appear at startup |
 | JACK won't start | Check `limits.conf` was applied and reboot was done; check `aplay -l` shows the device |
 | HLS segments exist but player can't find stream | Check `latest.txt` was uploaded to S3 |
 | Out of memory | `sudo dmesg \| grep -E "oom\|killed"` — reduce ffmpeg thread count in `stream_sync.sh` |

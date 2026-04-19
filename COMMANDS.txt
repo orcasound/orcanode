@@ -1,7 +1,7 @@
 Login to node:
 ssh pi@<your-node-hostname-or-ip>
 
-Edit the orcanode.service file:
+Edit the orcanode.service file:  (MAKE SURE SErVICE POINTS TO YOUR DESIRED node DIRECTORY IN 2 PLACES.)
 sudo nano /etc/systemd/system/orcanode.service
 
 Reload and restart after editing the service file:

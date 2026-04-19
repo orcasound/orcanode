@@ -91,6 +91,33 @@ mkdir -p /tmp/$NODE_NAME/hls/$timestamp
 # Output timestamp for this (latest) stream
 echo $timestamp > /tmp/$NODE_NAME/latest.txt
 
+# --- DISK MANAGEMENT ---
+# Maximum number of HLS session directories to keep in /tmp at once.
+# Each 10-second segment is ~200 KB; a 1-hour outage accumulates ~72 MB per session.
+# 8 sessions caps storage at roughly 600 MB worst-case.
+MAX_HLS_DIRS=8
+
+prune_old_hls_dirs() {
+    local current_ts="$1"
+    local hls_base="/tmp/$NODE_NAME/hls"
+
+    # List all numeric timestamp dirs except the current session, newest-first
+    mapfile -t old_dirs < <(ls -dt "$hls_base"/[0-9]* 2>/dev/null | grep -v "/$current_ts$")
+
+    local max_old=$(( MAX_HLS_DIRS - 1 ))
+    if (( ${#old_dirs[@]} > max_old )); then
+        local to_delete=$(( ${#old_dirs[@]} - max_old ))
+        # Oldest dirs are at the end of a newest-first list; delete them first
+        for dir in "${old_dirs[@]: -$to_delete}"; do
+            echo "Pruning oldest HLS dir (MAX_HLS_DIRS=$MAX_HLS_DIRS exceeded): $dir"
+            rm -rf "$dir"
+        done
+    fi
+    echo "HLS dirs: ${#old_dirs[@]} old session(s) + 1 current (limit: $MAX_HLS_DIRS)"
+}
+
+prune_old_hls_dirs "$timestamp"
+
 STREAM_RATE=48000
 
 if [ -z ${SAMPLE_RATE+48000} ]; then
@@ -214,11 +241,15 @@ if [ $NODE_LOOPBACK = "hls" ]; then
     ffplay -nodisp /tmp/$NODE_NAME/hls/$timestamp/live.m3u8
 fi
 
+# Background: upload any HLS directories left from previous sessions, then clean them up.
+# Runs at lower CPU priority (nice +10) so it never competes with the real-time uploader.
+nice -n 10 python3 "$SCRIPT_DIR/upload_old_hls.py" &
+
 if [ $NODE_TYPE = "research" ]; then
-    python3 upload_s3.py &
-    python3 upload_flac_s3.py
+    python3 "$SCRIPT_DIR/upload_s3.py" &
+    python3 "$SCRIPT_DIR/upload_flac_s3.py"
 else
-    python3 upload_s3.py
+    python3 "$SCRIPT_DIR/upload_s3.py"
 fi
 
 echo "all done"
