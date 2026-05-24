@@ -108,14 +108,30 @@ FFMPEG_PID=""
 
 if [ "$NODE_TYPE" = "research" ]; then
 	nice -n -10 ffmpeg -f jack -i ffjack \
-       -f segment -segment_time "00:00:$FLAC_DURATION.00" -strftime 1 "/tmp/$NODE_NAME/flac/%Y-%m-%d_%H-%M-%S_$NODE_NAME-$SAMPLE_RATE-$CHANNELS.flac" \
-       -f segment -segment_list "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" -segment_list_flags +live -segment_list_size 5 -segment_time $SEGMENT_DURATION -segment_format \
-       mpegts -ar $STREAM_RATE -ac 2 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" \
-       >/tmp/$NODE_NAME/ffmpeg.log 2>&1 &
+	  -f segment \
+	  -segment_time "00:00:$FLAC_DURATION.00" \
+	  -strftime 1 "/tmp/$NODE_NAME/flac/%Y-%m-%d_%H-%M-%S_$NODE_NAME-$SAMPLE_RATE-$CHANNELS.flac" \
+	  -ar $STREAM_RATE -ac $CHANNELS -acodec aac \
+	  -f hls \
+	  -hls_time $SEGMENT_DURATION \
+	  -hls_list_size 5 \
+	  -hls_flags program_date_time \
+	  -hls_segment_filename "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" \
+	  "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" \
+	  >/tmp/$NODE_NAME/ffmpeg.log 2>&1 &
 	FFMPEG_PID=$!
 elif [ "$NODE_TYPE" = "hls-only" ]; then
-	nice -n -10 ffmpeg -f jack -i ffjack -f segment -segment_list "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" -segment_list_flags +live -segment_list_size 5 -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac $CHANNELS -threads 3 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" \
-       >/tmp/$NODE_NAME/ffmpeg.log 2>&1 &
+	nice -n -10 ffmpeg -f jack -i ffjack \
+	  -ar $STREAM_RATE \
+	  -ac $CHANNELS \
+	  -acodec aac \
+	  -f hls \
+	  -hls_time $SEGMENT_DURATION \
+	  -hls_list_size 5 \
+	  -hls_flags program_date_time \
+	  -hls_segment_filename "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" \
+	  "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" \
+	  >/tmp/$NODE_NAME/ffmpeg.log 2>&1 &
 	FFMPEG_PID=$!
 else
     echo "Unsupported NODE_TYPE. Please use research or hls-only."

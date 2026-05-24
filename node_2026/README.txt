@@ -17,7 +17,11 @@ On startup stream_sync.sh:
   1. Waits for a sane system clock
   2. Discovers the Pisound ALSA device
   3. Starts jackd with the discovered hw address
-  4. Launches ffmpeg to capture from JACK and write HLS segments
+  4. Launches ffmpeg to capture from JACK and write:
+       hls-only:  HLS segments (.ts) + rolling 5-entry live.m3u8
+       research:  same HLS output, plus lossless FLAC archive chunks
+     Both modes embed absolute UTC timestamps (EXT-X-PROGRAM-DATE-TIME)
+     in the manifest so players and researchers can locate segments by time.
   5. Launches upload_s3.py to stream segments to S3 as they are written
   6. Launches catchup_s3.py (nice -n 10) to recover segments missed during
      any internet outage
@@ -143,9 +147,23 @@ Each .ts segment should be 150-300 KB. Watch them appear in real time:
 
   docker compose exec streaming watch -n 1 'ls -lh /tmp/<NODE_NAME>/hls/*/'
 
+In research mode, also check FLAC files are being written:
+
+  docker compose exec streaming ls -lh /tmp/<NODE_NAME>/flac/
+
+Each .flac file covers FLAC_DURATION seconds of lossless audio.
+
 If NO_UPLOAD=false, verify segments are reaching S3:
 
   aws s3 ls s3://audio-orcasound-net/<NODE_NAME>/hls/ --human-readable
+
+Segments are stored under a timestamp subdirectory, e.g.:
+  s3://audio-orcasound-net/<NODE_NAME>/hls/<timestamp>/live000.ts
+
+The live manifest (live.m3u8) is a rolling window of the 5 most recent
+segments (~50 seconds). Inspect it to confirm program_date_time tags:
+
+  aws s3 cp s3://audio-orcasound-net/<NODE_NAME>/hls/<timestamp>/live.m3u8 -
 
 Check the upload log for RMS values (healthy signal = RMS > 100):
 
