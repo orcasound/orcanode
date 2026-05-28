@@ -114,7 +114,7 @@ if [ "$NODE_TYPE" = "research" ]; then
 	  -ar $STREAM_RATE -ac $CHANNELS -acodec aac \
 	  -f hls \
 	  -hls_time $SEGMENT_DURATION \
-	  -hls_list_size 5 \
+	  -hls_list_size 0 \
 	  -hls_flags program_date_time \
 	  -hls_segment_filename "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" \
 	  "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" \
@@ -127,7 +127,7 @@ elif [ "$NODE_TYPE" = "hls-only" ]; then
 	  -acodec aac \
 	  -f hls \
 	  -hls_time $SEGMENT_DURATION \
-	  -hls_list_size 5 \
+	  -hls_list_size 0 \
 	  -hls_flags program_date_time \
 	  -hls_segment_filename "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" \
 	  "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" \

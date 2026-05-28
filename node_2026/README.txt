@@ -18,7 +18,7 @@ On startup stream_sync.sh:
   2. Discovers the Pisound ALSA device
   3. Starts jackd with the discovered hw address
   4. Launches ffmpeg to capture from JACK and write:
-       hls-only:  HLS segments (.ts) + rolling 5-entry live.m3u8
+       hls-only:  HLS segments (.ts) + growing live.m3u8 (all segments for the day)
        research:  same HLS output, plus lossless FLAC archive chunks
      Both modes embed absolute UTC timestamps (EXT-X-PROGRAM-DATE-TIME)
      in the manifest so players and researchers can locate segments by time.
@@ -123,6 +123,9 @@ Build the image and start (first time only, or after code changes):
 After the first build, Docker manages the container automatically:
   - restart: always  — restarts on crash without any action needed
   - Docker enabled at boot — container starts on every reboot
+  - crontab (installed by setup.sh) restarts at midnight each night so
+    each calendar day gets its own S3 timestamp directory and a complete
+    live.m3u8 covering only that day
 
 Watch the startup logs:
 
@@ -160,8 +163,9 @@ If NO_UPLOAD=false, verify segments are reaching S3:
 Segments are stored under a timestamp subdirectory, e.g.:
   s3://audio-orcasound-net/<NODE_NAME>/hls/<timestamp>/live000.ts
 
-The live manifest (live.m3u8) is a rolling window of the 5 most recent
-segments (~50 seconds). Inspect it to confirm program_date_time tags:
+The live manifest (live.m3u8) grows throughout the day, accumulating every
+segment since the last midnight restart. Inspect it to confirm program_date_time
+tags:
 
   aws s3 cp s3://audio-orcasound-net/<NODE_NAME>/hls/<timestamp>/live.m3u8 -
 
