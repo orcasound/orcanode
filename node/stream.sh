@@ -20,6 +20,7 @@ mkdir -p /tmp/$NODE_NAME
 mkdir -p /tmp/$NODE_NAME/flac
 mkdir -p /tmp/$NODE_NAME/hls
 mkdir -p /tmp/$NODE_NAME/hls/$timestamp
+mkdir -p /tmp/$NODE_NAME/local_hls
 #mkdir -p /tmp/$NODE_NAME/dash
 #mkdir -p /tmp/$NODE_NAME/dash/$timestamp
 #ln /tmp/$NODE_NAME/dash/$timestamp /tmp/dash_output_dir
@@ -78,7 +79,8 @@ elif [ $NODE_TYPE = "hls-only" ]; then
 	echo "Sampling $CHANNELS channels from $AUDIO_HW_ID at $SAMPLE_RATE Hz..."
   	echo "Asking ffmpeg to stream only HLS segments at $STREAM_RATE Hz......" 
   	## Streaming HLS only via mpegts
-	nice -n -10 ffmpeg -f jack -i ffjack -f segment -segment_list "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac $CHANNELS -threads 3 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" &
+	nice -n -10 ffmpeg -f jack -i ffjack -f segment -segment_list "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac $CHANNELS -threads 3 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" \
+		-ar $STREAM_RATE -ac $CHANNELS -acodec aac -f hls -hls_time $SEGMENT_DURATION -hls_list_size 10 -hls_flags delete_segments "/tmp/$NODE_NAME/local_hls/live.m3u8" &
 elif [ $NODE_TYPE = "dev-virt-s3" ]; then
     SAMPLE_RATE=48000
     STREAM_RATE=48000
@@ -90,6 +92,11 @@ elif [ $NODE_TYPE = "dev-virt-s3" ]; then
     -ar $STREAM_RATE -ac $CHANNELS -threads 3 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" &
 else
         echo "unsupported please pick hls-only, research, or dev-virt-s3"
+fi
+
+# Serve a local HLS copy over the LAN for offline playback: http://<node-ip>:8080/live.m3u8
+if [ -d "/tmp/$NODE_NAME/local_hls" ]; then
+    ( cd "/tmp/$NODE_NAME/local_hls" && python3 -m http.server 8080 ) &
 fi
 
 # takes a second for ffmpeg to make ffjack connection before we can connect
