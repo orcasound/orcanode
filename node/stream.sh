@@ -21,6 +21,9 @@ mkdir -p /tmp/$NODE_NAME/flac
 mkdir -p /tmp/$NODE_NAME/hls
 mkdir -p /tmp/$NODE_NAME/hls/$timestamp
 mkdir -p /tmp/$NODE_NAME/local_hls
+# Populate the local web root (status page + bundled HLS player) served at http://<node-ip>:8080/
+cp hls.min.js /tmp/$NODE_NAME/local_hls/ 2>/dev/null
+sed "s|__NODE_NAME__|$NODE_NAME|g" status.html > /tmp/$NODE_NAME/local_hls/index.html 2>/dev/null
 #mkdir -p /tmp/$NODE_NAME/dash
 #mkdir -p /tmp/$NODE_NAME/dash/$timestamp
 #ln /tmp/$NODE_NAME/dash/$timestamp /tmp/dash_output_dir

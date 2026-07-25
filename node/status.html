@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orcanode — __NODE_NAME__</title>
+<style>
+  :root { color-scheme: dark light; }
+  body { font-family: -apple-system, system-ui, sans-serif; background:#0f1720; color:#e6edf3; margin:0; padding:2rem; }
+  .wrap { max-width: 640px; margin: 0 auto; }
+  h1 { font-size:1.4rem; margin:0 0 .25rem; }
+  .sub { color:#8b98a5; margin:0 0 1.5rem; font-size:.9rem; }
+  .card { background:#18212b; border:1px solid #2a3540; border-radius:10px; padding:1rem 1.25rem; margin-bottom:1rem; }
+  .row { display:flex; align-items:center; gap:.6rem; margin:.45rem 0; flex-wrap:wrap; }
+  .dot { width:12px; height:12px; border-radius:50%; background:#555; flex:none; }
+  .dot.ok { background:#2ea043; box-shadow:0 0 8px #2ea043; }
+  .dot.bad { background:#d1242f; box-shadow:0 0 8px #d1242f; }
+  .dot.warn { background:#d29922; }
+  .k { color:#8b98a5; }
+  .mono { font-family: ui-monospace, monospace; }
+  a { color:#4aa3ff; }
+  audio { width:100%; margin-top:.6rem; }
+  .hint { font-size:.8rem; color:#8b98a5; margin-top:.5rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🐋 Orcanode — <span class="mono">__NODE_NAME__</span></h1>
+  <p class="sub">Local node status · <span id="clock">—</span></p>
+
+  <div class="card">
+    <div class="row"><span class="dot ok"></span> <strong>Node</strong><span class="k">— page served, so the node &amp; streaming container are up</span></div>
+    <div class="row"><span class="dot" id="dot-stream"></span> <strong>Streaming</strong><span class="k" id="stream-msg">— checking…</span></div>
+    <div class="row"><span class="k">Segments in window:</span> <span class="mono" id="segcount">—</span> <span class="k">· latest:</span> <span class="mono" id="lastseg">—</span></div>
+  </div>
+
+  <div class="card">
+    <strong>Listen</strong>
+    <audio id="player" controls preload="none"></audio>
+    <div class="hint" id="hint">Plays in this page (Safari native, others via bundled hls.js). Or open <a href="live.m3u8">live.m3u8</a> in VLC.</div>
+  </div>
+</div>
+
+<script src="hls.min.js"></script>
+<script>
+  var clk = document.getElementById('clock');
+  var dot = document.getElementById('dot-stream');
+  var msg = document.getElementById('stream-msg');
+  var segcount = document.getElementById('segcount');
+  var lastseg = document.getElementById('lastseg');
+  var player = document.getElementById('player');
+  var hint = document.getElementById('hint');
+  var url = 'live.m3u8';
+
+  // Attach a player: native HLS (Safari) first, else bundled hls.js (Chrome/Firefox).
+  if (player.canPlayType('application/vnd.apple.mpegurl')) {
+    player.src = url;
+  } else if (window.Hls && Hls.isSupported()) {
+    var hls = new Hls();
+    hls.loadSource(url);
+    hls.attachMedia(player);
+  } else {
+    hint.textContent = 'This browser cannot play HLS — open live.m3u8 in VLC.';
+  }
+
+  setInterval(function(){ clk.textContent = new Date().toLocaleTimeString(); }, 1000);
+
+  // Status: poll the manifest and check whether new segments keep appearing.
+  var prevLast = null, stalls = 0;
+  async function check(){
+    try {
+      var r = await fetch(url + '?_=' + Date.now(), {cache:'no-store'});
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+      var txt = await r.text();
+      var segs = txt.split('\n').filter(function(l){ return l.trim().slice(-3) === '.ts'; });
+      segcount.textContent = segs.length;
+      var last = segs.length ? segs[segs.length-1].trim() : null;
+      lastseg.textContent = last || '—';
+      if(last && last !== prevLast){
+        prevLast = last; stalls = 0;
+        dot.className = 'dot ok'; msg.textContent = '— live, segments advancing';
+      } else {
+        stalls++;
+        dot.className = stalls >= 2 ? 'dot bad' : 'dot warn';
+        msg.textContent = stalls >= 2 ? '— manifest not advancing (stalled?)' : '— waiting for next segment…';
+      }
+    } catch(e){
+      dot.className = 'dot bad'; msg.textContent = '— manifest unreachable (' + e.message + ')';
+    }
+  }
+  check(); setInterval(check, 6000);
+</script>
+</body>
+</html>
