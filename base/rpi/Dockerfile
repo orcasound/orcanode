@@ -8,6 +8,11 @@
 FROM arm32v7/debian:buster-slim
 MAINTAINER Orcasound <orcanode-devs@orcasound.net>
 
+# Buster is EOL and moved to the Debian archive; repoint apt so it resolves
+RUN sed -i 's|deb.debian.org/debian|archive.debian.org/debian|g' /etc/apt/sources.list \
+    && sed -i '/buster-updates/d' /etc/apt/sources.list \
+    && echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99no-check-valid-until
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git\
     build-essential \
