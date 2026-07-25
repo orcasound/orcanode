@@ -40,6 +40,13 @@ echo @audio - memlock 256000 >> /etc/security/limits.conf
 echo @audio - rtprio 75 >> /etc/security/limits.co
 JACK_NO_AUDIO_RESERVATION=1 jackd -t 2000 -P 75 -d alsa -d hw:$AUDIO_HW_ID -r $SAMPLE_RATE -p 1024 -n 10 -s &
 
+# Wait for jackd to be fully up (system capture port present) before starting ffmpeg,
+# otherwise ffmpeg's jack client can register at rate=0 and fail to open the input.
+for i in $(seq 1 40); do
+    jack_lsp 2>/dev/null | grep -q 'system:capture_1' && break
+    sleep 0.5
+done
+
 #### Generate stream segments and manifests, and/or lossless archive
 
 echo "Node started at $timestamp"
