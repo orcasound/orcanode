@@ -99,11 +99,14 @@ control, so plain SSH to a LAN IP stops working the moment the Pi
 leaves your bench. Tailscale gives the node a stable address on your
 private tailnet that works from anywhere, without port forwarding.
 
-Install and bring it up:
+Install and bring it up: ( sudo tailscale up --force-reauth to re-authorize connection to tailscale)
 
 ```bash
 curl -fsSL https://tailscale.com/install.sh | sh
-sudo tailscale up
+sudo tailscale up        # --force-reauth  
+sudo tailscale set --operator=$USER
+tailscale set --ssh
+
 ```
 
 This prints an authentication URL. Open it in a browser and approve
@@ -145,9 +148,13 @@ ssh pi@$(tailscale ip -4)
 
 ## Step 3 — Clone the Repository
 
+This node currently lives on the `node_2026` branch, not yet merged
+into `main` — clone that branch directly, or `cd ~/orcanode/node_2026`
+will fail with no such directory:
+
 ```bash
 sudo apt-get install -y git
-git clone https://github.com/orcasound/orcanode.git ~/orcanode
+git clone -b node_2026 https://github.com/orcasound/orcanode.git ~/orcanode
 cd ~/orcanode/node_2026
 ```
 
