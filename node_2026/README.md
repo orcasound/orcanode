@@ -51,9 +51,40 @@ Flash your SD card with Raspberry Pi Imager and set:
 - SSH enabled
 - Username: `pi` (or your preferred username)
 - Password
-- WiFi SSID and password (if not using ethernet)
+- WiFi SSID and password — **only if using WiFi.** Ethernet is
+  recommended: it's more reliable for an unattended field node, and
+  skips WiFi setup entirely. If you're wiring Ethernet, leave the
+  Wireless LAN tab blank.
 
-Boot the Pi and SSH in:
+**Using Ethernet:** plug the cable into the Pi and your router/switch
+*before* first power-on, so DHCP negotiation happens cleanly at boot.
+Then boot the Pi and find it — no monitor needed:
+
+```bash
+ping rpi-orcasound-lab.local     # mDNS/Avahi, on by default
+ssh pi@rpi-orcasound-lab.local
+```
+
+If `.local` doesn't resolve from your machine, check your router's
+DHCP client list for the hostname/IP instead. A DHCP reservation (by
+MAC address) is worth setting up once you see the IP, so it stays
+consistent for direct LAN troubleshooting later — day-to-day remote
+access will go through Tailscale instead (Step 2), so this is a
+convenience, not a requirement.
+
+**Optional — disable the onboard WiFi radio.** If this Pi will only
+ever use Ethernet, disabling WiFi entirely avoids it hunting for
+networks, logging noise, or drawing power for nothing:
+
+```bash
+echo "dtoverlay=disable-wifi" | sudo tee -a /boot/firmware/config.txt
+sudo reboot
+```
+
+(`/boot/firmware/config.txt` is the Bookworm/Trixie path — not the
+older `/boot/config.txt`.)
+
+**Using WiFi instead:** boot the Pi and SSH in directly:
 
 ```bash
 ssh pi@<pi-ip-address>
@@ -94,6 +125,12 @@ tailscale ip -4
 
 The Pi should now appear as its own entry in the admin console with a
 `100.x.x.x` address and a "last seen" time that keeps ticking forward.
+
+In the admin console, click the three dots next to the new machine and
+choose **Edit ACL tags** to tag it with its role (e.g. `research`,
+`production`, `veirs`) — useful once you have several nodes and want
+to filter or write ACLs by tag.
+
 From here on you can SSH in over Tailscale instead of the LAN IP —
 useful for the rest of this setup, and essential once the node is
 shipped to its deployment site:
@@ -103,12 +140,6 @@ ssh pi@rpi-orcasound-lab
 # or
 ssh pi@$(tailscale ip -4)
 ```
-
-> **Cloning this SD card for additional nodes?** A raw image clone
-> copies Tailscale's node identity along with everything else, which
-> causes the new Pi to collide with the source node on your tailnet.
-> See [`CLONE_README.md`](CLONE_README.md) for the de-duplication
-> steps required before a cloned card can come online safely.
 
 ---
 
@@ -391,11 +422,6 @@ tailscale status
 Also check the admin console for an ACL restricting SSH between
 devices/tags — a permissive default tailnet allows it, but locked-down
 tailnets need an explicit ACL rule.
-
-**Two nodes show up as the same machine, or one keeps dropping
-offline right as another comes online:**
-This is a cloned Tailscale identity — see the Troubleshooting section
-of [`CLONE_README.md`](CLONE_README.md).
 
 ---
 

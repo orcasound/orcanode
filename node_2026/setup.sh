@@ -7,7 +7,7 @@ set -e  # Exit immediately if any command fails
 # Detect the actual user (works whether run as root or with sudo)
 REAL_USER=${SUDO_USER:-$USER}
 REAL_HOME=$(eval echo "~$REAL_USER")
-PROJECT_DIR="$REAL_HOME/orcanode/node_val_docker"
+PROJECT_DIR="$REAL_HOME/orcanode/node_2026"
 
 echo "=== Hydrophone Node Setup (Docker) ==="
 echo "Starting at $(date)"
