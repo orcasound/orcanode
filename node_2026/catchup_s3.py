@@ -20,6 +20,8 @@ import logging
 import urllib.request
 import boto3
 
+from logdna_handler import attach_logdna_handler
+
 NODE = os.environ["NODE_NAME"]
 SEGMENT_DURATION = int(os.environ.get("SEGMENT_DURATION", "10").strip())
 BASEPATH = os.path.join("/tmp", NODE)
@@ -47,6 +49,10 @@ log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler(sys.stdout)
 handler.setFormatter(logging.Formatter("catchup.%(funcName)s: %(message)s"))
 log.addHandler(handler)
+# INFO here (vs upload_s3.py's default WARNING) — catch-up activity itself
+# (stranded segments found, disk guard deletions) is worth centralizing,
+# since it signals the node had connectivity trouble.
+attach_logdna_handler(log, NODE, app="catchup_s3", level=logging.INFO)
 
 
 def is_connected():

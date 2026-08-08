@@ -11,6 +11,8 @@ import subprocess
 import os
 import sys
 
+from logdna_handler import attach_logdna_handler
+
 NODE = os.environ["NODE_NAME"]
 BASEPATH = os.path.join("/tmp", NODE)
 PATH = os.path.join(BASEPATH, "hls")
@@ -24,6 +26,7 @@ handler = logging.StreamHandler(sys.stdout)
 formatter = logging.Formatter('%(module)s.%(funcName)s: %(message)s')
 handler.setFormatter(formatter)
 log.addHandler(handler)
+attach_logdna_handler(log, NODE, app="upload_s3")
 
 BUCKET = ""
 if "BUCKET_TYPE" in os.environ:

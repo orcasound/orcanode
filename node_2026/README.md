@@ -189,8 +189,7 @@ Required variables:
 | `AWS_METADATA_SERVICE_TIMEOUT` | `5` |
 | `AWS_METADATA_SERVICE_NUM_ATTEMPTS` | `0` |
 | `REGION` | `us-west-2` |
-| `SYSLOG_URL` | `syslog://syslog-a.logdna.com:37043` |
-| `SYSLOG_STRUCTURED_DATA` | `logdna@48950 key="<your-key>" tag="docker"` |
+| `LOGDNA_INGESTION_KEY` | Optional. Set to forward `upload_s3.py`/`catchup_s3.py` logs to Mezmo (formerly LogDNA) — warnings/errors from the uploader, and catch-up activity after an outage. Leave unset to skip centralized logging entirely; nothing else depends on it. |
 | `LC_ALL` | `C.UTF-8` |
 | `NO_UPLOAD` | `false` — set `true` to test the pipeline without S3 |
 
@@ -347,6 +346,54 @@ deleted first to protect the SD card.
 
 No configuration required — this runs automatically alongside
 `upload_s3.py`.
+
+---
+
+## Centralized Logging (Mezmo / LogDNA)
+
+If `LOGDNA_INGESTION_KEY` is set in `.env` (see Step 4), `upload_s3.py`
+and `catchup_s3.py` forward selected log lines to
+[Mezmo](https://app.mezmo.com/) (formerly LogDNA) over HTTPS, so you
+can check on a node's health without SSHing in. This is optional —
+leave the key unset and nothing changes.
+
+**What gets sent:**
+
+| Source | Minimum level forwarded | Typical content |
+|---|---|---|
+| `upload_s3.py` | `WARNING` | Low-RMS warnings (possible silence/bad capture), S3 upload failures |
+| `catchup_s3.py` | `INFO` | Stranded segments found after an outage, disk-guard deletions, catch-up progress |
+
+Routine per-segment activity (every successful upload, RMS values on a
+healthy signal) stays local-only by design, to avoid flooding a
+rate-limited API — check those with `docker compose logs -f` instead.
+Boot-time output (`stream_sync.sh`, JACK, ffmpeg) isn't sent to Mezmo
+either, since it never passes through Python logging; that's local-only
+too, same command.
+
+**To view the logs:**
+
+1. Log into [app.mezmo.com](https://app.mezmo.com/) with the account
+   tied to your ingestion key.
+2. Each node reports under its `NODE_NAME` as the **Host** — use the
+   Host filter (left sidebar, or `host:` in the search bar) to narrow
+   to one node. This is why keeping `NODE_NAME` unique per node
+   (Step 4) matters here too.
+3. Use the **App** filter (or `app:` in the search bar) to separate
+   `upload_s3` from `catchup_s3` events.
+4. Use the **Level** filter to jump straight to `WARN`/`ERROR` — that's
+   the fastest way to spot a node that's gone silent or lost its audio
+   signal without reading through everything.
+
+If a node's logs aren't showing up in Mezmo at all, check the
+container's own log first — the handler logs a local warning
+(`LogDNA delivery failed: ...`) whenever it can't reach Mezmo, so
+`docker compose logs -f` will tell you if the key is wrong or the node
+has no route out:
+
+```bash
+docker compose logs -f | grep -i logdna
+```
 
 ---
 

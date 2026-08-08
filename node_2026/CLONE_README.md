@@ -132,7 +132,7 @@ nano .env
 | `BUCKET_TYPE` | Usually unchanged | Keep `prod` unless this new node is a test/dev deployment. |
 | `NO_UPLOAD` | Set `true` temporarily | Recommended for first boot — verify segments generate locally before enabling live S3 upload with a brand-new `NODE_NAME`. Flip to `false` once verified (see Step 6). |
 | `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | Usually unchanged | Same bucket, same credentials — unless this node should log in under a separate IAM identity. |
-| `SYSLOG_STRUCTURED_DATA` | Usually unchanged | Shared LogDNA ingestion key; logs from all nodes land in the same place, distinguished by `NODE_NAME` in the log content. |
+| `LOGDNA_INGESTION_KEY` | Usually unchanged | Shared Mezmo/LogDNA ingestion key, if set; logs from all nodes land in the same place, distinguished by the `hostname` each node sends (its `NODE_NAME`). |
 | Everything else (`SAMPLE_RATE`, `CHANNELS`, `SEGMENT_DURATION`, `FLAC_DURATION`, `REGION`, `LC_ALL`) | Usually unchanged | Hardware/format constants, not node-specific. |
 
 Do **not** rebuild the Docker image for a `.env` change — `.env` is
