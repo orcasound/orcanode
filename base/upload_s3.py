@@ -57,18 +57,24 @@ def s3_copy_file(path, filename):
         uploadkey = os.path.join(uploadpath, filename, )
         log.debug('upload key: ' + uploadkey)
         resource.meta.client.upload_file(uploadfile, BUCKET, uploadkey)  # TODO have to build filename into correct key.
-        os.remove(path+'/'+filename)  # maybe not necessary since we write to /tmp and reboot every so often
-    except:
-        e = sys.exc_info()[0]
+        if filename != 'latest.txt':
+            os.remove(path+'/'+filename)  # maybe not necessary since we write to /tmp and reboot every so often
+        return True
+    except Exception as e:
         log.critical('error uploading to S3: '+str(e))
+        return False
 
 def _main():
-    s3_copy_file(BASEPATH, 'latest.txt')
+    latest_uploaded = False
+    if os.path.exists(os.path.join(BASEPATH, 'latest.txt')):
+        latest_uploaded = s3_copy_file(BASEPATH, 'latest.txt')
     i = inotify.adapters.InotifyTree(PATH)
     # TODO we should ideally block block_duration_s on the watch about the rate at which we write files, maybe slightly less
     try:
         for event in i.event_gen(yield_nones=False):
             (header, type_names, path, filename) = event
+            if not latest_uploaded and os.path.exists(os.path.join(BASEPATH, 'latest.txt')):
+                latest_uploaded = s3_copy_file(BASEPATH, 'latest.txt')
             if type_names[0] == 'IN_CLOSE_WRITE':
                 if 'tmp' not in filename:
                     log.debug('Received a new file ' + filename)
@@ -79,7 +85,8 @@ def _main():
     finally:
         log.debug('all done')
 
-        
+
 if __name__ == '__main__':
     _main()
+
 
