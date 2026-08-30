@@ -1,6 +1,6 @@
 ### Installing
 
-After first creating a base image and a baseline .env file you will need to add certain specific env variable for mseed.  Then you can use docker-compose build to build your image and docker-compose up to run it.  Your .env file should look like this.
+After first creating a base image and a baseline .env file you will need to add certain specific env variable for mseed.  Then you can use `docker-compose build` to build your image and `docker-compose up` to run it.  Your .env file should look like this.
 
 ```
 AWSACCESSKEYID=YourAWSaccessKey
