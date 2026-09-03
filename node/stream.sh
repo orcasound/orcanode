@@ -39,17 +39,26 @@ else
     echo "sample rate is set to $SAMPLE_RATE";
 fi
 
-#  Setup jack 
-echo @audio - memlock 256000 >> /etc/security/limits.conf
-echo @audio - rtprio 75 >> /etc/security/limits.co
-JACK_NO_AUDIO_RESERVATION=1 jackd -t 2000 -P 75 -d alsa -d hw:$AUDIO_HW_ID -r $SAMPLE_RATE -p 1024 -n 10 -s &
+# Audio backend: jackd is only needed by soundcard-based node types. File- and
+# network-fed types pipe PCM straight into ffmpeg and must skip jack entirely.
+case "$NODE_TYPE" in
+    research|debug|hls-only) USE_JACK=1 ;;
+    *) USE_JACK=0 ;;
+esac
 
-# Wait for jackd to be fully up (system capture port present) before starting ffmpeg,
-# otherwise ffmpeg's jack client can register at rate=0 and fail to open the input.
-for i in $(seq 1 40); do
-    jack_lsp 2>/dev/null | grep -q 'system:capture_1' && break
-    sleep 0.5
-done
+if [ "$USE_JACK" = 1 ]; then
+    #  Setup jack
+    echo @audio - memlock 256000 >> /etc/security/limits.conf
+    echo @audio - rtprio 75 >> /etc/security/limits.conf
+    JACK_NO_AUDIO_RESERVATION=1 jackd -t 2000 -P 75 -d alsa -d hw:$AUDIO_HW_ID -r $SAMPLE_RATE -p 1024 -n 10 -s &
+
+    # Wait for jackd to be fully up (system capture port present) before starting ffmpeg,
+    # otherwise ffmpeg's jack client can register at rate=0 and fail to open the input.
+    for i in $(seq 1 40); do
+        jack_lsp 2>/dev/null | grep -q 'system:capture_1' && break
+        sleep 0.5
+    done
+fi
 
 #### Generate stream segments and manifests, and/or lossless archive
 
@@ -93,8 +102,22 @@ elif [ $NODE_TYPE = "dev-virt-s3" ]; then
   nice -n -10 ffmpeg -re -fflags +genpts -stream_loop -1 -i "samples/haro-strait_2005.wav" \
     -f segment -segment_list "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts \
     -ar $STREAM_RATE -ac $CHANNELS -threads 3 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" &
+elif [ $NODE_TYPE = "file-archive" ]; then
+    ## Stream a rolling archive of timestamped audio files (config via ARCHIVE_* env)
+    echo "Feeding archive audio into HLS, delayed based on ARCHIVE_DELAY ..."
+    python3 archive_feed.py --rate $STREAM_RATE --channels $CHANNELS \
+      | nice -n -10 ffmpeg -re -f s16le -ar $STREAM_RATE -ac $CHANNELS -i pipe:0 \
+        -f segment -segment_list "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac $CHANNELS -threads 3 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" \
+        -ar $STREAM_RATE -ac $CHANNELS -acodec aac -f hls -hls_time $SEGMENT_DURATION -hls_list_size 10 -hls_flags delete_segments "/tmp/$NODE_NAME/local_hls/live.m3u8" &
+elif [ $NODE_TYPE = "iclisten" ]; then
+    ## EXPERIMENTAL: live ingest from an icListen hydrophone over TCP (see experimental/iclisten/)
+    echo "Streaming live from icListen at ${ICLISTEN_HOST}..."
+    python3 experimental/iclisten/iclisten_stream.py "$ICLISTEN_HOST" \
+      | nice -n -10 ffmpeg -re -f ${ICLISTEN_FMT:-s24le} -ar ${ICLISTEN_RATE:-$SAMPLE_RATE} -ac $CHANNELS -i pipe:0 \
+        -f segment -segment_list "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac $CHANNELS -threads 3 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" \
+        -ar $STREAM_RATE -ac $CHANNELS -acodec aac -f hls -hls_time $SEGMENT_DURATION -hls_list_size 10 -hls_flags delete_segments "/tmp/$NODE_NAME/local_hls/live.m3u8" &
 else
-        echo "unsupported please pick hls-only, research, or dev-virt-s3"
+        echo "unsupported please pick hls-only, research, dev-virt-s3, file-archive, or iclisten"
 fi
 
 # Serve a local HLS copy over the LAN for offline playback: http://<node-ip>:8080/live.m3u8
@@ -102,17 +125,19 @@ if [ -d "/tmp/$NODE_NAME/local_hls" ]; then
     ( cd "/tmp/$NODE_NAME/local_hls" && python3 -m http.server 8080 ) &
 fi
 
-# takes a second for ffmpeg to make ffjack connection before we can connect
-sleep 3
-jack_connect system:capture_1 ffjack:input_1
-jack_connect system:capture_2 ffjack:input_2
+if [ "$USE_JACK" = 1 ]; then
+    # takes a second for ffmpeg to make ffjack connection before we can connect
+    sleep 3
+    jack_connect system:capture_1 ffjack:input_1
+    jack_connect system:capture_2 ffjack:input_2
 
-if [ $NODE_LOOPBACK = "true" ]; then
-    jack_connect system:capture_1 system:playback_1
-    jack_connect system:capture_2 system:playback_2
+    if [ "$NODE_LOOPBACK" = "true" ]; then
+        jack_connect system:capture_1 system:playback_1
+        jack_connect system:capture_2 system:playback_2
+    fi
 fi
 
-if [ $NODE_LOOPBACK = "hls" ]; then
+if [ "$NODE_LOOPBACK" = "hls" ]; then
     sleep 20
     ffplay -nodisp /tmp/$NODE_NAME/hls/$timestamp/live.m3u8    
 fi

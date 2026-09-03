@@ -10,9 +10,15 @@ services:
     ports:
       - "1234:1234"
       - "8080:8080"
+      - "80:8080"
     devices:
       - "/dev/snd:/dev/snd"
     privileged: true
+    volumes:
+      # Read-only host mount for NODE_TYPE=file-archive: bind whatever host path
+      # the file source is mounted at (SMB / NFS / local / etc.), set via
+      # ARCHIVE_MOUNT in .env. Harmless for other node types if unused.
+      - "${ARCHIVE_MOUNT:-/mnt/nas}:${ARCHIVE_MOUNT:-/mnt/nas}:ro"
 
   logspout:
     # Use unofficial logspout that's been compiled for armhf
