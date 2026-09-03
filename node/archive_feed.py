@@ -199,6 +199,7 @@ def main(argv=None):
 
             ok = False
             if name is not None:
+                log("playing %s (offset %ds)" % (name, int(offset)))
                 ok = decode_file(out, args.ffmpeg, os.path.join(args.dir, name),
                                  offset, dur, args.rate, args.channels)
             if not ok:
