@@ -20,11 +20,9 @@ piped into ffmpeg, e.g.:
 
 Config (env / flag):
   ARCHIVE_DIR          directory holding the files
-  ARCHIVE_GLOB         filename glob within the dir (default "*.wav")
-  ARCHIVE_PREFIX       optional filename prefix to select one source among many
-  ARCHIVE_TIME_REGEX   regex with one group capturing the timestamp substring of
-                       the filename (default r"(\\d{8}_\\d{6})")
-  ARCHIVE_TIME_FORMAT  strptime format for that substring (default "%Y%m%d_%H%M%S")
+  ARCHIVE_FILENAME     strptime pattern for the WHOLE filename; files matching it
+                       are used and their start time is parsed from it, e.g.
+                       "site_%Y%m%d_%H%M%S.wav" (required)
   ARCHIVE_FILE_SECONDS nominal length of each file, seconds (default 300)
   ARCHIVE_DELAY        seconds to stay behind wall-clock (default 3600)
   ARCHIVE_REINDEX      seconds between directory re-scans (default 60)
@@ -37,9 +35,7 @@ Timestamps in filenames are treated as UTC (the common case for such archives).
 
 import argparse
 import calendar
-import glob as globmod
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -60,28 +56,21 @@ def log(msg):
 
 # --- Pure helpers (unit-tested in test_archive.py) ---------------------------
 
-def parse_timestamp(name, regex, time_format):
-    """Return the UTC epoch for a filename, or None if it doesn't match."""
-    m = regex.search(name)
-    if not m:
-        return None
+def parse_timestamp(name, pattern):
+    """Return the UTC epoch parsed from `name` via the strptime `pattern`, or
+    None if the whole filename doesn't match the pattern."""
     try:
-        return calendar.timegm(time.strptime(m.group(1), time_format))
+        return calendar.timegm(time.strptime(name, pattern))
     except ValueError:
         return None
 
 
-def build_index(names, regex, time_format, prefix=None):
-    """Map filenames -> sorted list of (start_epoch, name).
-
-    `names` is an iterable of basenames. Non-matching / wrong-prefix names are
-    dropped. Result is sorted ascending by start time.
-    """
+def build_index(names, pattern):
+    """Map filenames -> sorted list of (start_epoch, name), keeping only the
+    names that match `pattern`. Sorted ascending by start time."""
     out = []
     for name in names:
-        if prefix and not name.startswith(prefix):
-            continue
-        ts = parse_timestamp(name, regex, time_format)
+        ts = parse_timestamp(name, pattern)
         if ts is not None:
             out.append((ts, name))
     out.sort()
@@ -160,10 +149,7 @@ def decode_file(out, ffmpeg, path, offset, dur, rate, channels):
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--dir", default=env("ARCHIVE_DIR"))
-    p.add_argument("--glob", default=env("ARCHIVE_GLOB", "*.wav"))
-    p.add_argument("--prefix", default=env("ARCHIVE_PREFIX"))
-    p.add_argument("--time-regex", default=env("ARCHIVE_TIME_REGEX", r"(\d{8}_\d{6})"))
-    p.add_argument("--time-format", default=env("ARCHIVE_TIME_FORMAT", "%Y%m%d_%H%M%S"))
+    p.add_argument("--filename", default=env("ARCHIVE_FILENAME"))
     p.add_argument("--file-seconds", type=float, default=float(env("ARCHIVE_FILE_SECONDS", "300")))
     p.add_argument("--delay", type=float, default=float(env("ARCHIVE_DELAY", "3600")))
     p.add_argument("--reindex", type=float, default=float(env("ARCHIVE_REINDEX", "60")))
@@ -174,11 +160,12 @@ def main(argv=None):
 
     if not args.dir:
         p.error("ARCHIVE_DIR is required")
-    regex = re.compile(args.time_regex)
+    if not args.filename:
+        p.error("ARCHIVE_FILENAME is required")
     out = sys.stdout.buffer
 
-    log("dir=%s glob=%s prefix=%s delay=%ss file=%ss out=%dHz/%dch"
-        % (args.dir, args.glob, args.prefix, args.delay, args.file_seconds,
+    log("dir=%s filename=%s delay=%ss file=%ss out=%dHz/%dch"
+        % (args.dir, args.filename, args.delay, args.file_seconds,
            args.rate, args.channels))
 
     play_time = time.time() - args.delay
@@ -189,11 +176,8 @@ def main(argv=None):
         try:
             now = time.time()
             if now - last_index >= args.reindex or not index:
-                names = []
-                if os.path.isdir(args.dir):
-                    names = [os.path.basename(x) for x in
-                             globmod.glob(os.path.join(args.dir, args.glob))]
-                index = build_index(names, regex, args.time_format, args.prefix)
+                names = os.listdir(args.dir) if os.path.isdir(args.dir) else []
+                index = build_index(names, args.filename)
                 last_index = now
                 # Report how far the archive trails real time, so an archive that
                 # slips past the delay (-> silence) is visible in logs
@@ -201,7 +185,7 @@ def main(argv=None):
                     lag = now - (index[-1][0] + args.file_seconds)
                     margin = args.delay - lag
                     if margin < 0:
-                        log("NAS lag %ds EXCEEDS delay %ds (short by %ds) -> stream is silence until it catches up"
+                        log("archive lag %ds EXCEEDS delay %ds (short by %ds) -> stream is silence until it catches up"
                             % (int(lag), int(args.delay), int(-margin)))
                     else:
                         log("archive %ds behind real time; delay %ds; margin %ds"

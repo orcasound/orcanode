@@ -5,13 +5,12 @@ Run:  python3 test_archive.py
 """
 
 import calendar
-import re
 import sys
 
 import archive_feed as af
 
-REGEX = re.compile(r"(\d{8}_\d{6})")
-FMT = "%Y%m%d_%H%M%S"
+# One explicit strptime pattern for the whole filename (selects + parses time).
+PAT = "sensorA_%Y%m%d_%H%M%S.wav"
 
 
 def check(name, cond):
@@ -22,22 +21,22 @@ def check(name, cond):
 
 def main():
     # 1. timestamp parsing -> UTC epoch
-    ts = af.parse_timestamp("sensorA_20200102_030000.wav", REGEX, FMT)
+    ts = af.parse_timestamp("sensorA_20200102_030000.wav", PAT)
     check("parse timestamp UTC epoch",
           ts == calendar.timegm((2020, 1, 2, 3, 0, 0, 0, 0, 0)))
     check("parse timestamp no-match -> None",
-          af.parse_timestamp("readme.txt", REGEX, FMT) is None)
+          af.parse_timestamp("readme.txt", PAT) is None)
 
-    # 2. index build: prefix filter + sorted, ignores other sources/extensions
+    # 2. index build: pattern selects matching names only, sorted ascending
     names = [
         "sensorA_20200102_030500.wav",
         "sensorA_20200102_030000.wav",
-        "sensorB_20200102_030000.wav",   # different source prefix
-        "aux_20200102_030000.txt",       # different source / extension
+        "sensorB_20200102_030000.wav",   # different source -> excluded by pattern
+        "sensorA_20200102_030000.txt",   # different extension -> excluded
         "notes.md",                      # no timestamp
     ]
-    idx = af.build_index(names, REGEX, FMT, prefix="sensorA")
-    check("index count (prefix filter)", len(idx) == 2)
+    idx = af.build_index(names, PAT)
+    check("index count (pattern filter)", len(idx) == 2)
     check("index sorted ascending", idx[0][1].endswith("030000.wav"))
 
     # Build a clean two-slot index at T, T+300
