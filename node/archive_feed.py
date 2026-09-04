@@ -164,7 +164,7 @@ def main(argv=None):
         p.error("ARCHIVE_FILENAME is required")
     out = sys.stdout.buffer
 
-    log("dir=%s filename=%s delay=%ss file=%ss out=%dHz/%dch"
+    log("dir=%s pattern=%s delay=%ss file=%ss out=%dHz/%dch"
         % (args.dir, args.filename, args.delay, args.file_seconds,
            args.rate, args.channels))
 
