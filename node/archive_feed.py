@@ -28,6 +28,7 @@ Config (env / flag):
   ARCHIVE_REINDEX      seconds between directory re-scans (default 60)
   OUT_RATE             output PCM sample rate (default from STREAM_RATE or 48000)
   OUT_CHANNELS         output channel count (default from CHANNELS or 1)
+  ARCHIVE_GAIN         linear gain in dB (default 0 = off) - make sure peaks remain below 0 dBFS to avoid clipping
   FFMPEG               ffmpeg binary (default "ffmpeg")
 
 Timestamps in filenames are treated as UTC (the common case for such archives).
@@ -119,14 +120,17 @@ def write_silence(out, seconds, rate, channels):
     out.flush()
 
 
-def decode_file(out, ffmpeg, path, offset, dur, rate, channels):
+def decode_file(out, ffmpeg, path, offset, dur, rate, channels, gain_db=0.0):
     """Decode `dur` seconds from `path` starting at `offset`, as s16le, to out.
 
     Returns True on success, False if the file could not be read (caller then
     substitutes silence)."""
     cmd = [ffmpeg, "-nostdin", "-loglevel", "error",
-           "-ss", "%.3f" % offset, "-i", path, "-t", "%.3f" % dur,
-           "-f", "s16le", "-ar", str(rate), "-ac", str(channels), "pipe:1"]
+           "-ss", "%.3f" % offset, "-i", path, "-t", "%.3f" % dur]
+    if gain_db:
+        # set gain here (pre-s16le) so it's applied at full resolution, not after quantizing
+        cmd += ["-af", "volume=%gdB" % gain_db]
+    cmd += ["-f", "s16le", "-ar", str(rate), "-ac", str(channels), "pipe:1"]
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     except OSError as exc:
@@ -155,6 +159,7 @@ def main(argv=None):
     p.add_argument("--reindex", type=float, default=float(env("ARCHIVE_REINDEX", "60")))
     p.add_argument("--rate", type=int, default=int(env("OUT_RATE", env("STREAM_RATE", "48000"))))
     p.add_argument("--channels", type=int, default=int(env("OUT_CHANNELS", env("CHANNELS", "1"))))
+    p.add_argument("--gain", type=float, default=float(env("ARCHIVE_GAIN", "0")))
     p.add_argument("--ffmpeg", default=env("FFMPEG", "ffmpeg"))
     args = p.parse_args(argv)
 
@@ -167,6 +172,11 @@ def main(argv=None):
     log("dir=%s pattern=%s delay=%ss file=%ss out=%dHz/%dch"
         % (args.dir, args.filename, args.delay, args.file_seconds,
            args.rate, args.channels))
+    # Log the gain applied so anyone reusing this audio knows how it was changed.
+    if args.gain:
+        log("audio processing config: linear gain %+g dB" % args.gain)
+    else:
+        log("audio processing config: none")
 
     play_time = time.time() - args.delay
     index = []
@@ -201,7 +211,7 @@ def main(argv=None):
             if name is not None:
                 log("playing %s (offset %ds)" % (name, int(offset)))
                 ok = decode_file(out, args.ffmpeg, os.path.join(args.dir, name),
-                                 offset, dur, args.rate, args.channels)
+                                 offset, dur, args.rate, args.channels, args.gain)
             if not ok:
                 write_silence(out, dur, args.rate, args.channels)
             play_time += dur
