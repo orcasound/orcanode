@@ -104,11 +104,25 @@ elif [ $NODE_TYPE = "dev-virt-s3" ]; then
     -ar $STREAM_RATE -ac $CHANNELS -threads 3 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" &
 elif [ $NODE_TYPE = "file-archive" ]; then
     ## Stream a rolling archive of timestamped audio files (config via ARCHIVE_* env)
-    echo "Feeding archive audio into HLS, delayed based on ARCHIVE_DELAY ..."
-    python3 archive_feed.py --rate $STREAM_RATE --channels $CHANNELS \
-      | nice -n -10 ffmpeg -nostats -loglevel warning -re -f s16le -ar $STREAM_RATE -ac $CHANNELS -i pipe:0 \
-        -f segment -segment_list "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -ac $CHANNELS -threads 3 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" \
-        -ar $STREAM_RATE -ac $CHANNELS -acodec aac -f hls -hls_time $SEGMENT_DURATION -hls_list_size 10 -hls_flags delete_segments "/tmp/$NODE_NAME/local_hls/live.m3u8" &
+    ## One output channel per ARCHIVE_PATTERNS entry, e.g. one file per hydrophone
+    if [ -z "${ARCHIVE_PATTERNS:-}" ]; then
+        echo "file-archive: ARCHIVE_PATTERNS is required"; exit 1
+    fi
+    ARCHIVE_CH=$(echo "$ARCHIVE_PATTERNS" | awk -F, '{print NF}')
+    # Name the layout; ffmpeg guesses 2.1 for 3 channels and loses the third to LFE
+    case "$ARCHIVE_CH" in
+        1) ARCHIVE_LAYOUT=mono ;;
+        2) ARCHIVE_LAYOUT=stereo ;;
+        3) ARCHIVE_LAYOUT=3.0 ;;
+        4) ARCHIVE_LAYOUT=4.0 ;;
+        *) echo "file-archive: unsupported channel count $ARCHIVE_CH"; exit 1 ;;
+    esac
+
+    echo "Feeding $ARCHIVE_CH-channel ($ARCHIVE_LAYOUT) archive audio into HLS, delayed based on ARCHIVE_DELAY ..."
+    python3 archive_feed.py --rate $STREAM_RATE \
+      | nice -n -10 ffmpeg -nostats -loglevel warning -re -f s16le -ar $STREAM_RATE -ac $ARCHIVE_CH -channel_layout $ARCHIVE_LAYOUT -i pipe:0 \
+        -f segment -segment_list "/tmp/$NODE_NAME/hls/$timestamp/live.m3u8" -segment_list_flags +live -segment_time $SEGMENT_DURATION -segment_format mpegts -ar $STREAM_RATE -channel_layout $ARCHIVE_LAYOUT -threads 3 -acodec aac "/tmp/$NODE_NAME/hls/$timestamp/live%03d.ts" \
+        -ar $STREAM_RATE -channel_layout $ARCHIVE_LAYOUT -acodec aac -f hls -hls_time $SEGMENT_DURATION -hls_list_size 10 -hls_flags delete_segments "/tmp/$NODE_NAME/local_hls/live.m3u8" &
 elif [ $NODE_TYPE = "iclisten" ]; then
     ## EXPERIMENTAL: live ingest from an icListen hydrophone over TCP (see experimental/iclisten/)
     echo "Streaming live from icListen at ${ICLISTEN_HOST}..."
