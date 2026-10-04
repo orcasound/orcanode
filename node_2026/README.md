@@ -192,10 +192,24 @@ Required variables:
 | `LOGDNA_INGESTION_KEY` | Optional. Set to forward `upload_s3.py`/`catchup_s3.py` logs to Mezmo (formerly LogDNA) — warnings/errors from the uploader, and catch-up activity after an outage. Leave unset to skip centralized logging entirely; nothing else depends on it. |
 | `LC_ALL` | `C.UTF-8` |
 | `NO_UPLOAD` | `false` — set `true` to test the pipeline without S3 |
+| `CHECK_LATENCY` | `false` — set `true` to inject a full-scale test tone at the top of every minute, for measuring capture-to-S3/player latency. Only has an effect when running `stream_sync_latency.sh` (see note below); ignored by the normal `stream_sync.sh`. |
+| `LATENCY_PULSE_DURATION_MS` | Optional. Length of the latency test tone in milliseconds. Default `50`. |
+| `LATENCY_PULSE_FREQ_HZ` | Optional. Frequency of the latency test tone in Hz. Default `1000`. |
 
 > **Note:** Set `NO_UPLOAD=true` during initial testing. Segments will
 > accumulate locally in `/tmp/<NODE_NAME>/hls/` so you can verify the
 > pipeline end-to-end before enabling live uploads.
+
+> **Note:** `CHECK_LATENCY` is read by `stream_sync_latency.sh`, a
+> diagnostic copy of `stream_sync.sh` with the marker-injection logic
+> added. To use it, override the container command, e.g. add to
+> `docker-compose.yml` (or an override file):
+> ```yaml
+> command: ./stream_sync_latency.sh
+> ```
+> Then check the container logs for `LATENCY MARKER injected at ...`
+> lines, and compare that wall-clock timestamp against when the tone
+> actually shows up in the archived S3 files and in the live player.
 
 ---
 
