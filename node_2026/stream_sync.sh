@@ -30,21 +30,28 @@ fi
 
 # --- 1. TIME SYNCHRONIZATION ---
 wait_for_sync() {
-    echo "Checking for sane system time..."
+    echo "Checking time synchronization..."
     local max_wait=60
     local elapsed=0
-    
-    # Check if the year is 2025 or later
-    while [ $(date +%Y) -lt 2025 ]; do
-        if [ $elapsed -ge $max_wait ]; then
-            echo "ERROR: Time sync timed out, aborting."
-            exit 1
+
+    while [ $elapsed -lt $max_wait ]; do
+        # Compatible with older Pi OS versions
+        if timedatectl status 2>/dev/null | grep -q "System clock synchronized: yes"; then
+            echo "Time synchronized: $(date)"
+            return 0
         fi
-        echo "Waiting for time sync (current year: $(date +%Y))..."
+        # Also try the newer 'show' syntax as fallback
+        if timedatectl show -p NTPSynchronized --value 2>/dev/null | grep -q "yes"; then
+            echo "Time synchronized: $(date)"
+            return 0
+        fi
+        echo "Waiting for time sync... (${elapsed}s)"
         sleep 2
         elapsed=$((elapsed + 2))
     done
-    echo "Time looks sane: $(date)"
+
+    echo "ERROR: Time sync timed out after ${max_wait}s, aborting."
+    exit 1
 }
 
 wait_for_sync
