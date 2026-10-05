@@ -203,61 +203,16 @@ fi
 # time the marker is actually observed in S3 / the player to get the
 # end-to-end latency.
 #
-# Each marker's timing is freshly computed from the system clock right
-# before it fires, so there's no cumulative drift over a long-running
-# session. The only timing noise is the one-off delay of spawning ffmpeg and
-# wiring it into JACK (normally well under a second) — negligible next to
-# the multi-second S3/player latencies this is meant to measure.
+# The tone is written by latency_marker.py, a small JACK client that stays
+# connected to ffjack and schedules each tone on JACK's frame clock, so it
+# lands within a few ms of :00 with no cumulative drift. (ffmpeg can't be
+# used for this: its JACK support is input-only.) It runs with the same TZ
+# as ffmpeg (UTC_TIME), so its log lines up with FLAC/HLS timestamps.
 CHECK_LATENCY=${CHECK_LATENCY:-false}
-LATENCY_PULSE_DURATION_MS=${LATENCY_PULSE_DURATION_MS:-50}
-LATENCY_PULSE_FREQ_HZ=${LATENCY_PULSE_FREQ_HZ:-1000}
-
-inject_latency_markers() {
-    local pulse_seconds
-    pulse_seconds=$(awk "BEGIN { printf \"%.3f\", $LATENCY_PULSE_DURATION_MS / 1000 }")
-
-    while true; do
-        local now next_minute sleep_time client_name ports p i
-        now=$(date +%s.%N)
-        next_minute=$(( ( $(date +%s) / 60 + 1 ) * 60 ))
-        sleep_time=$(awk "BEGIN { printf \"%.3f\", $next_minute - $now }")
-        sleep "$sleep_time"
-
-        client_name="latency_marker_$(date +%s)"
-        nice -n -10 ffmpeg -loglevel error -f lavfi \
-            -i "sine=frequency=${LATENCY_PULSE_FREQ_HZ}:duration=${pulse_seconds}:sample_rate=${STREAM_RATE}:amp=1" \
-            -ac "$CHANNELS" -f jack "$client_name" \
-            >>/tmp/$NODE_NAME/latency_marker.log 2>&1 &
-
-        # Wire whichever output ports this marker client registers into
-        # ffjack's inputs, in order, as soon as they appear.
-        ports=""
-        for i in $(seq 1 100); do
-            ports=$(jack_lsp 2>/dev/null | grep "^${client_name}:")
-            [ -n "$ports" ] && break
-            sleep 0.02
-        done
-
-        if [ -z "$ports" ]; then
-            echo "WARNING: latency marker ports never appeared, skipping this marker."
-            continue
-        fi
-
-        i=1
-        for p in $ports; do
-            jack_connect -s default "$p" "ffjack:input_$i" 2>/dev/null
-            i=$((i + 1))
-        done
-
-        # Same time zone as ffmpeg (UTC_TIME), so this lines up with the
-        # FLAC filenames and HLS timestamps without converting.
-        echo "LATENCY MARKER injected at $("${FFMPEG_TZ[@]}" date -Iseconds) (epoch $(date +%s), UTC_TIME=${UTC_TIME:-false})"
-    done
-}
 
 if [ "$CHECK_LATENCY" = "true" ]; then
-    echo "CHECK_LATENCY=true: injecting a full-scale ${LATENCY_PULSE_DURATION_MS}ms, ${LATENCY_PULSE_FREQ_HZ}Hz marker tone at the top of every minute."
-    inject_latency_markers &
+    echo "CHECK_LATENCY=true: injecting a full-scale ${LATENCY_PULSE_DURATION_MS:-50}ms, ${LATENCY_PULSE_FREQ_HZ:-1000}Hz marker tone at the top of every minute."
+    "${FFMPEG_TZ[@]}" python3 latency_marker.py &
 fi
 
 # Launch Python uploaders

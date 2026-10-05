@@ -206,8 +206,9 @@ Required variables:
 > pipeline end-to-end before enabling live uploads.
 
 > **Note:** `CHECK_LATENCY` is read by `stream_sync_latency.sh`, a
-> diagnostic copy of `stream_sync.sh` with the marker-injection logic
-> added. To use it, override the container command, e.g. add to
+> diagnostic copy of `stream_sync.sh` that also starts
+> `latency_marker.py`, a small JACK client that mixes the tone into the
+> feed at the top of each minute. To use it, override the container command, e.g. add to
 > `docker-compose.yml` (or an override file):
 > ```yaml
 > command: ./stream_sync_latency.sh

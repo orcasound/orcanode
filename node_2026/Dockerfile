@@ -26,7 +26,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN python3 -m venv /venv
 RUN /venv/bin/pip install --upgrade pip
-RUN /venv/bin/pip install boto3 inotify numpy
+RUN /venv/bin/pip install boto3 inotify numpy JACK-Client
 
 # Make venv the default Python environment
 ENV PATH="/venv/bin:$PATH"
@@ -40,7 +40,7 @@ RUN usermod -aG audio root
 WORKDIR /app
 COPY . .
 
-RUN chmod +x stream_sync.sh
+RUN chmod +x stream_sync.sh stream_sync_latency.sh
 ###### Runtime #########################################################
 
 CMD ["./stream_sync.sh"]
