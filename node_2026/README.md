@@ -363,6 +363,77 @@ You should see `system:capture_1/2` connected to `ffjack:input_1/2`.
 
 ---
 
+## Updating a Deployed Node
+
+To get new code from the `node_2026` branch onto a Pi that's already
+running, pull it with git and **rebuild the image**. The Dockerfile
+copies the scripts into the image at build time, so `git pull` alone
+leaves the container running the old code.
+
+**1. SSH in over Tailscale:**
+
+```bash
+ssh pi@<node-hostname>      # or ssh pi@100.x.x.x
+```
+
+**2. Check for local edits, then pull:**
+
+```bash
+cd ~/orcanode
+git status            # should be clean, on branch node_2026
+git pull
+git log --oneline -1  # confirm you're on the expected commit
+```
+
+`.env` is in `.gitignore`, so the pull never overwrites it. If
+`git status` shows files edited on the Pi, `git stash` them (or commit
+them) before pulling.
+
+**3. Add any new `.env` settings.** A pull doesn't add new variables to
+an existing `.env` — compare it against `.env.template` and add what's
+missing (see Step 4 for what each does):
+
+```bash
+cd ~/orcanode/node_2026
+diff <(grep -o '^#\?[A-Z_]*=' .env.template | tr -d '#' | sort -u) \
+     <(grep -o '^[A-Z_]*=' .env | sort -u)
+nano .env
+```
+
+Lines starting with `<` are in the template but not in your `.env`.
+Most have safe defaults when missing (e.g. `UTC_TIME` behaves as
+`false`), but with `BUCKET_TYPE=custom` you need `BUCKET_STREAMING`,
+plus `BUCKET_ARCHIVE` on research nodes.
+
+**4. Rebuild and restart:**
+
+```bash
+docker compose up -d --build
+```
+
+Only the steps that copy the code rerun, so this is quick after the
+first build.
+
+**5. Verify** with `docker compose logs -f` and the checks in Step 7.
+For example, the startup log should include a `UTC_TIME=...` line, and
+on research nodes FLAC chunks in `/tmp/<NODE_NAME>/flac/` should
+disappear as they upload (with `NO_UPLOAD=false`).
+
+**If the Pi's copy isn't a git clone** (files were copied over by hand),
+make a fresh clone next to it and bring `.env` across:
+
+```bash
+git clone -b node_2026 https://github.com/orcasound/orcanode.git ~/orcanode_new
+cp ~/orcanode/node_2026/.env ~/orcanode_new/node_2026/
+cd ~/orcanode/node_2026 && docker compose down
+cd ~/orcanode_new/node_2026 && docker compose up -d --build
+```
+
+Then check the midnight-restart crontab entry (`crontab -l`) still
+points at the folder you're now running from.
+
+---
+
 ## Internet Outage Recovery
 
 `upload_s3.py` leaves segments on disk when uploads fail. When
