@@ -3,7 +3,7 @@
 ## Background
 
 The usual way to provision a new hydrophone node is to flash a fresh SD
-card and walk through `README.txt` end to end (`setup.sh`, `.env`, Docker
+card and walk through `README.md` end to end (`setup.sh`, `.env`, Docker
 build). That takes ~30-45 minutes per Pi because of package installs and
 the Docker image build.
 
@@ -125,13 +125,14 @@ nano .env
 
 | Variable | Action | Why |
 |---|---|---|
-| `NODE_NAME` | **Change — must be unique** | This is the S3 path prefix (`s3://<bucket>/<NODE_NAME>/hls/...`). Two nodes sharing a name will overwrite each other's segments. |
+| `NODE_NAME` | **Change — must be unique** | This is the S3 path prefix (`s3://<bucket>/<NODE_NAME>/hls/...`, and on research nodes `s3://<archive-bucket>/<NODE_NAME>/flac/...`). Two nodes sharing a name will overwrite each other's segments. |
 | `AUDIO_HW_ID` | Verify | Should still be `pisound` if this Pi also has a Pisound HAT; confirm with `aplay -l` since HAT enumeration order can vary between boards. |
-| `NODE_TYPE` | Verify | `hls-only` or `research` — set per what this node should do, independent of the source node's setting. |
+| `NODE_TYPE` | Verify | `hls-only` or `research` — set per what this node should do, independent of the source node's setting. `research` also records FLAC and runs `upload_flac_s3.py` to upload it to the archive bucket — see Step 5 to check the cloned image includes it. |
 | `NODE_LOOPBACK` | Verify | Local-monitoring preference for this physical install, not necessarily the same as the source. |
-| `BUCKET_TYPE` | Usually unchanged | Keep `prod` unless this new node is a test/dev deployment. |
+| `BUCKET_TYPE` | Usually unchanged | Keep `prod` unless this new node is a test/dev deployment. With `custom`, also set `BUCKET_STREAMING`, and `BUCKET_ARCHIVE` for research nodes. |
 | `NO_UPLOAD` | Set `true` temporarily | Recommended for first boot — verify segments generate locally before enabling live S3 upload with a brand-new `NODE_NAME`. Flip to `false` once verified (see Step 6). |
 | `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | Usually unchanged | Same bucket, same credentials — unless this node should log in under a separate IAM identity. |
+| `UTC_TIME` | Usually unchanged | `false` = FLAC filenames in the Pi's local time, `true` = UTC. Keep it the same as the other nodes so archive filenames across nodes use one time zone. Missing from `.env` (older clones) means `false`. |
 | `LOGDNA_INGESTION_KEY` | Usually unchanged | Shared Mezmo/LogDNA ingestion key, if set; logs from all nodes land in the same place, distinguished by the `hostname` each node sends (its `NODE_NAME`). |
 | Everything else (`SAMPLE_RATE`, `CHANNELS`, `SEGMENT_DURATION`, `FLAC_DURATION`, `REGION`, `LC_ALL`) | Usually unchanged | Hardware/format constants, not node-specific. |
 
@@ -197,6 +198,19 @@ docker compose up -d
 cloned along with the rest of the SD card. Only rebuild if you've also
 changed code, not just `.env`.)
 
+**Research nodes: check the image has `upload_flac_s3.py`.** The scripts
+are copied into the image at build time, so an image built before
+`upload_flac_s3.py` was added won't have it. A `research` node then
+fails at the upload step and the container restarts in a loop. Check
+before bringing it up:
+
+```bash
+docker compose run --rm streaming ls -l upload_flac_s3.py
+```
+
+If it reports `No such file or directory`, pull the latest code and
+rebuild once: `git pull && docker compose up -d --build`.
+
 Watch the logs for a healthy startup:
 
 ```bash
@@ -210,6 +224,9 @@ Time looks sane: <date>
 Success! pisound found at index N. Using address: hw:N,0
 JACK is ready.
 ```
+
+On a research node with uploads enabled, `upload_flac_s3.py` also logs
+`flac bucket set to <archive-bucket>` at startup.
 
 ---
 
@@ -234,11 +251,29 @@ hardware):
 docker compose exec streaming ls -lh /tmp/<NODE_NAME>/hls/
 ```
 
+On research nodes, also check FLAC chunks are being written (one per
+`FLAC_DURATION` seconds):
+
+```bash
+docker compose exec streaming ls -lh /tmp/<NODE_NAME>/flac/
+```
+
+The start time in each filename should match the current time in UTC if
+`UTC_TIME=true`, or the Pi's local time otherwise. The container log
+also shows which mode it chose (`UTC_TIME=true: ...` / `UTC_TIME=false: ...`).
+
 **S3 upload**, once you're satisfied and have flipped `NO_UPLOAD=false`
 in `.env` and restarted (`docker compose up -d` picks up the change):
 
 ```bash
 aws s3 ls s3://audio-orcasound-net/<NODE_NAME>/hls/ --human-readable
+```
+
+On research nodes, FLAC chunks go to the archive bucket via
+`upload_flac_s3.py`:
+
+```bash
+aws s3 ls s3://archive-orcasound-net/<NODE_NAME>/flac/ --human-readable
 ```
 
 Confirm the objects land under the **new** `NODE_NAME` prefix, not the
@@ -269,3 +304,11 @@ Tailscale hostname.** Either Step 2's host-key regeneration was skipped,
 or your local `~/.ssh/known_hosts` cached the source Pi's key under a
 name now reused by the clone. Remove the stale entry:
 `ssh-keygen -R rpi-orcasound-bush-point`.
+
+**Research node: container keeps restarting, or FLAC files pile up in
+`/tmp/<NODE_NAME>/flac/` and never reach S3.** If the logs show
+`can't open file '/app/upload_flac_s3.py'`, the cloned image predates
+the FLAC uploader — rebuild as described in Step 5. Otherwise check the
+`upload_flac_s3` log lines for upload errors; with `BUCKET_TYPE=custom`,
+`BUCKET_ARCHIVE` must be set in `.env`. Files that failed to upload are
+retried by `catchup_s3.py` once connectivity returns.

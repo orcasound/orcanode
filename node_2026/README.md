@@ -24,12 +24,14 @@ On startup `stream_sync.sh`:
      segments for the day)
    - **research**: same HLS output, plus lossless FLAC archive chunks
 
-   Both modes embed absolute UTC timestamps (`EXT-X-PROGRAM-DATE-TIME`)
+   Both modes embed absolute timestamps with a UTC offset (`EXT-X-PROGRAM-DATE-TIME`)
    in the manifest so players and researchers can locate segments by
    time.
 5. Launches `upload_s3.py` to stream segments to S3 as they are written
-6. Launches `catchup_s3.py` (`nice -n 10`) to recover segments missed
-   during any internet outage
+6. **research** only: launches `upload_flac_s3.py` to upload each FLAC
+   chunk to the archive bucket as it is finished
+7. Launches `catchup_s3.py` (`nice -n 10`) to recover segments (and,
+   on research nodes, FLAC chunks) missed during any internet outage
 
 ## Prerequisites
 
@@ -184,14 +186,17 @@ Required variables:
 | `FLAC_DURATION` | FLAC archive chunk length (research mode) |
 | `NODE_LOOPBACK` | `true` to monitor audio on local output |
 | `BUCKET_TYPE` | `prod`, `dev`, or `custom` |
+| `BUCKET_STREAMING` | HLS bucket name. Required only when `BUCKET_TYPE=custom`. |
+| `BUCKET_ARCHIVE` | FLAC archive bucket name. Required only when `BUCKET_TYPE=custom` on `research` nodes. |
 | `AWS_ACCESS_KEY_ID` | Your AWS access key |
 | `AWS_SECRET_ACCESS_KEY` | Your AWS secret key |
 | `AWS_METADATA_SERVICE_TIMEOUT` | `5` |
 | `AWS_METADATA_SERVICE_NUM_ATTEMPTS` | `0` |
 | `REGION` | `us-west-2` |
-| `LOGDNA_INGESTION_KEY` | Optional. Set to forward `upload_s3.py`/`catchup_s3.py` logs to Mezmo (formerly LogDNA) — warnings/errors from the uploader, and catch-up activity after an outage. Leave unset to skip centralized logging entirely; nothing else depends on it. |
+| `LOGDNA_INGESTION_KEY` | Optional. Set to forward `upload_s3.py`/`upload_flac_s3.py`/`catchup_s3.py` logs to Mezmo (formerly LogDNA) — warnings/errors from the uploader, and catch-up activity after an outage. Leave unset to skip centralized logging entirely; nothing else depends on it. |
 | `LC_ALL` | `C.UTF-8` |
 | `NO_UPLOAD` | `false` — set `true` to test the pipeline without S3 |
+| `UTC_TIME` | `false` — FLAC filenames and HLS `EXT-X-PROGRAM-DATE-TIME` use the Pi's local time. Set `true` to use UTC instead. Either way the HLS timestamps carry a UTC offset, so they mark the same instant; only the FLAC filenames change meaning. |
 | `CHECK_LATENCY` | `false` — set `true` to inject a full-scale test tone at the top of every minute, for measuring capture-to-S3/player latency. Only has an effect when running `stream_sync_latency.sh` (see note below); ignored by the normal `stream_sync.sh`. |
 | `LATENCY_PULSE_DURATION_MS` | Optional. Length of the latency test tone in milliseconds. Default `50`. |
 | `LATENCY_PULSE_FREQ_HZ` | Optional. Frequency of the latency test tone in Hz. Default `1000`. |
@@ -207,9 +212,16 @@ Required variables:
 > ```yaml
 > command: ./stream_sync_latency.sh
 > ```
+> It launches the same uploaders as `stream_sync.sh` — `upload_s3.py`
+> and `catchup_s3.py`, plus `upload_flac_s3.py` on `research` nodes — so
+> the marker tone reaches S3 by the normal paths.
 > Then check the container logs for `LATENCY MARKER injected at ...`
 > lines, and compare that wall-clock timestamp against when the tone
-> actually shows up in the archived S3 files and in the live player.
+> actually shows up in the archived S3 files (HLS segments, and on
+> research nodes the FLAC chunks under `<NODE_NAME>/flac/` in the
+> archive bucket) and in the live player. The marker log line uses the
+> same time zone as the FLAC filenames (UTC if `UTC_TIME=true`,
+> otherwise the Pi's local time), with its UTC offset and the Unix epoch.
 
 ---
 
@@ -287,7 +299,10 @@ In research mode, also check FLAC files are being written:
 docker compose exec streaming ls -lh /tmp/<NODE_NAME>/flac/
 ```
 
-Each `.flac` file covers `FLAC_DURATION` seconds of lossless audio.
+Each `.flac` file covers `FLAC_DURATION` seconds of lossless audio. The
+filename (`YYYY-MM-DD_HH-MM-SS_<NODE_NAME>-<SAMPLE_RATE>-<CHANNELS>.flac`)
+gives the chunk's start time in the Pi's local time, or in UTC if
+`UTC_TIME=true` (see Step 4).
 
 If `NO_UPLOAD=false`, verify segments are reaching S3:
 
@@ -355,8 +370,13 @@ connectivity returns, `catchup_s3.py` finds stranded segments,
 generates a VOD manifest (`catchup.m3u8`), and uploads everything at
 low priority (2s between segments).
 
+On research nodes, `upload_flac_s3.py` likewise leaves FLAC files on
+disk when uploads fail, and `catchup_s3.py` uploads them to the archive
+bucket after the HLS catch-up (no manifest needed).
+
 **Disk guard:** if stranded segments exceed 500 MB, the oldest are
-deleted first to protect the SD card.
+deleted first to protect the SD card. Stranded FLAC files have their
+own separate 500 MB limit.
 
 No configuration required — this runs automatically alongside
 `upload_s3.py`.
@@ -365,8 +385,8 @@ No configuration required — this runs automatically alongside
 
 ## Centralized Logging (Mezmo / LogDNA)
 
-If `LOGDNA_INGESTION_KEY` is set in `.env` (see Step 4), `upload_s3.py`
-and `catchup_s3.py` forward selected log lines to
+If `LOGDNA_INGESTION_KEY` is set in `.env` (see Step 4), `upload_s3.py`,
+`upload_flac_s3.py` and `catchup_s3.py` forward selected log lines to
 [Mezmo](https://app.mezmo.com/) (formerly LogDNA) over HTTPS, so you
 can check on a node's health without SSHing in. This is optional —
 leave the key unset and nothing changes.
@@ -376,7 +396,8 @@ leave the key unset and nothing changes.
 | Source | Minimum level forwarded | Typical content |
 |---|---|---|
 | `upload_s3.py` | `WARNING` | Low-RMS warnings (possible silence/bad capture), S3 upload failures |
-| `catchup_s3.py` | `INFO` | Stranded segments found after an outage, disk-guard deletions, catch-up progress |
+| `upload_flac_s3.py` | `WARNING` | FLAC upload failures, skipped empty/missing files (research nodes only) |
+| `catchup_s3.py` | `INFO` | Stranded segments and FLAC files found after an outage, disk-guard deletions, catch-up progress |
 
 Routine per-segment activity (every successful upload, RMS values on a
 healthy signal) stays local-only by design, to avoid flooding a
@@ -394,7 +415,7 @@ too, same command.
    to one node. This is why keeping `NODE_NAME` unique per node
    (Step 4) matters here too.
 3. Use the **App** filter (or `app:` in the search bar) to separate
-   `upload_s3` from `catchup_s3` events.
+   `upload_s3`, `upload_flac_s3` and `catchup_s3` events.
 4. Use the **Level** filter to jump straight to `WARN`/`ERROR` — that's
    the fastest way to spot a node that's gone silent or lost its audio
    signal without reading through everything.

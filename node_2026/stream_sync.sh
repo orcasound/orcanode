@@ -113,8 +113,18 @@ echo "JACK is ready."
 # --- 6. FFMPEG STREAMING ---
 FFMPEG_PID=""
 
+# UTC_TIME=true runs ffmpeg with TZ=UTC so FLAC filenames (and HLS
+# EXT-X-PROGRAM-DATE-TIME offsets) use UTC; otherwise the Pi's local time.
+FFMPEG_TZ=()
+if [ "$(echo "${UTC_TIME:-false}" | tr '[:upper:]' '[:lower:]')" = "true" ]; then
+    FFMPEG_TZ=(env TZ=UTC)
+    echo "UTC_TIME=true: ffmpeg timestamps and FLAC filenames use UTC."
+else
+    echo "UTC_TIME=false: ffmpeg timestamps and FLAC filenames use local time ($(date +%Z))."
+fi
+
 if [ "$NODE_TYPE" = "research" ]; then
-	nice -n -10 ffmpeg -f jack -i ffjack \
+	"${FFMPEG_TZ[@]}" nice -n -10 ffmpeg -f jack -i ffjack \
 	  -f segment \
 	  -segment_time "00:00:$FLAC_DURATION.00" \
 	  -strftime 1 "/tmp/$NODE_NAME/flac/%Y-%m-%d_%H-%M-%S_$NODE_NAME-$SAMPLE_RATE-$CHANNELS.flac" \
@@ -128,7 +138,7 @@ if [ "$NODE_TYPE" = "research" ]; then
 	  >/tmp/$NODE_NAME/ffmpeg.log 2>&1 &
 	FFMPEG_PID=$!
 elif [ "$NODE_TYPE" = "hls-only" ]; then
-	nice -n -10 ffmpeg -f jack -i ffjack \
+	"${FFMPEG_TZ[@]}" nice -n -10 ffmpeg -f jack -i ffjack \
 	  -ar $STREAM_RATE \
 	  -ac $CHANNELS \
 	  -acodec aac \

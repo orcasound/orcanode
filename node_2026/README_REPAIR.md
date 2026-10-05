@@ -151,6 +151,30 @@ session (whatever was still in the original rolling manifest).
 
 ---
 
+## FLAC archive files
+
+Research nodes (`NODE_TYPE=research`) also record lossless FLAC chunks,
+which `upload_flac_s3.py` uploads to the archive bucket:
+
+```
+s3://archive-orcasound-net/rpi_orcasound_lab/flac/2026-10-04_10-00-00_rpi_orcasound_lab-48000-2.flac
+```
+
+FLAC chunks have no manifest, so `repair_manifests.py` does not touch
+them and they never need repair.  Each filename carries the chunk's start
+time (UTC if `UTC_TIME=true` in `.env`, otherwise the Pi's local
+time), and each chunk covers
+`FLAC_DURATION` seconds.
+
+Chunks that fail to upload during an internet outage stay on the node,
+and `catchup_s3.py` uploads them once connectivity returns, the same way
+it recovers stranded HLS segments.  If an outage outlasts the disk guard
+(500 MB of stranded FLAC files), the oldest chunks are deleted on the
+node and that audio is lost.  This tool cannot recover it, and neither
+can any other.
+
+---
+
 ## Going forward
 
 As of the May 2026 update, `stream_sync.sh` uses `-hls_list_size 0` and the
