@@ -1,0 +1,35 @@
+services:
+  streaming:
+    image: orcasound/orcanode_val_docker
+    build: .
+    # Overrides CMD in Dockerfile if needed, but keeping it explicit is good
+    command: ./stream_sync.sh
+    restart: always
+    env_file: .env
+    
+    # 1. CRITICAL: Bridge the host's Chrony to the container
+    volumes:
+      - /var/run/chrony:/var/run/chrony
+      - /etc/localtime:/etc/localtime:ro
+      - /usr/share/alsa:/usr/share/alsa:ro
+
+    ports:
+      - "1234:1234"
+      - "8080:8080"
+
+    devices:
+      - "/dev/snd:/dev/snd"
+
+    # 2. Grant high-level hardware access
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    privileged: true
+    shm_size: '256m'
+    ulimits:
+      rtprio: 95
+      memlock:
+        soft: -1
+        hard: -1
