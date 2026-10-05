@@ -269,7 +269,7 @@ docker compose logs -f
 Healthy startup looks like:
 
 ```
-Time looks sane: <date>
+Time synchronized: <date>
 Success! pisound found at index N. Using address: hw:N,0
 JACK is ready.
 ```
@@ -504,6 +504,20 @@ docker compose logs -f | grep -i logdna
 ---
 
 ## Troubleshooting
+
+**Container keeps restarting with "Waiting for time sync..." then
+"ERROR: Time sync timed out":** the Pi's clock isn't NTP-synchronized
+yet. `stream_sync.sh` refuses to record until it is, because the
+timestamps go into the stream and filenames. On the Pi (not in the
+container), check:
+
+```bash
+timedatectl            # want "System clock synchronized: yes"
+systemctl status systemd-timesyncd chrony --no-pager
+```
+
+Usually it's no internet, or blocked NTP (UDP 123) on the site network.
+Once the Pi syncs, the next container restart gets past this step.
 
 **Docker pull/push fails ("network is unreachable"):**
 IPv6 issue on Pi OS Trixie. `setup.sh` fixes this automatically. If it

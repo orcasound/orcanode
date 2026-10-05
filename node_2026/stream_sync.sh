@@ -29,19 +29,27 @@ if ! command -v ffmpeg &> /dev/null; then
 fi
 
 # --- 1. TIME SYNCHRONIZATION ---
+# timedatectl can't be used here: the container has no systemd. Instead ask
+# the kernel directly via adjtimex() -- the container shares the host's
+# kernel, and chrony/systemd-timesyncd on the host clear its STA_UNSYNC flag
+# once the clock is really synchronized (the same flag timedatectl reports).
+# adjtimex returns 5 (TIME_ERROR) while the clock is unsynchronized.
+clock_synced() {
+    python3 -c '
+import ctypes, sys
+buf = ctypes.create_string_buffer(512)  # zeroed struct timex: modes=0, read-only
+state = ctypes.CDLL(None, use_errno=True).adjtimex(buf)
+sys.exit(0 if state not in (-1, 5) else 1)
+'
+}
+
 wait_for_sync() {
     echo "Checking time synchronization..."
     local max_wait=60
     local elapsed=0
 
     while [ $elapsed -lt $max_wait ]; do
-        # Compatible with older Pi OS versions
-        if timedatectl status 2>/dev/null | grep -q "System clock synchronized: yes"; then
-            echo "Time synchronized: $(date)"
-            return 0
-        fi
-        # Also try the newer 'show' syntax as fallback
-        if timedatectl show -p NTPSynchronized --value 2>/dev/null | grep -q "yes"; then
+        if clock_synced; then
             echo "Time synchronized: $(date)"
             return 0
         fi

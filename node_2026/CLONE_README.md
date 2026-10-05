@@ -220,7 +220,7 @@ docker compose logs -f
 Expect:
 
 ```
-Time looks sane: <date>
+Time synchronized: <date>
 Success! pisound found at index N. Using address: hw:N,0
 JACK is ready.
 ```
