@@ -34,6 +34,8 @@ fi
 # kernel, and chrony/systemd-timesyncd on the host clear its STA_UNSYNC flag
 # once the clock is really synchronized (the same flag timedatectl reports).
 # adjtimex returns 5 (TIME_ERROR) while the clock is unsynchronized.
+# REQUIRE_TIME_SYNC=false skips the wait, for hosts with no NTP daemon
+# (e.g. a test machine).
 clock_synced() {
     python3 -c '
 import ctypes, sys
@@ -44,6 +46,10 @@ sys.exit(0 if state not in (-1, 5) else 1)
 }
 
 wait_for_sync() {
+    if [ "$(echo "${REQUIRE_TIME_SYNC:-true}" | tr '[:upper:]' '[:lower:]')" = "false" ]; then
+        echo "REQUIRE_TIME_SYNC=false: not waiting for time sync. Clock: $(date)"
+        return 0
+    fi
     echo "Checking time synchronization..."
     local max_wait=60
     local elapsed=0
@@ -184,6 +190,8 @@ if [ "$NODE_LOOPBACK" = "true" ]; then
     jack_connect system:capture_2 system:playback_2
 fi
 
+echo "JACK, ffmpeg and port connections are up."
+
 # Launch Python uploaders
 if [ "${NO_UPLOAD:-false}" = "true" ]; then
     echo "NO_UPLOAD=true, skipping S3 upload. Segments will accumulate in /tmp/$NODE_NAME/hls/"
@@ -196,5 +204,3 @@ else
     nice -n 10 python3 catchup_s3.py &
     python3 upload_s3.py
 fi
-
-echo "All processes started successfully."

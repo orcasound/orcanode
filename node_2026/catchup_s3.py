@@ -21,7 +21,9 @@ import sys
 import time
 import glob
 import logging
+import subprocess
 import urllib.request
+from datetime import datetime, timezone
 import boto3
 
 from logdna_handler import attach_logdna_handler
@@ -132,14 +134,62 @@ def enforce_disk_guard(stranded, max_bytes=MAX_STRANDED_BYTES):
     return aged  # updated list after deletions
 
 
+def segment_duration(ts_file):
+    """Duration in seconds of a .ts segment: the sum of its audio packet
+    durations, which matches the EXTINF ffmpeg's hls muxer writes to within
+    a few ms. (ffprobe's format-level duration omits the encoder delay and
+    the last packet, and runs ~130 ms short.) Falls back to SEGMENT_DURATION
+    so an unreadable file is still listed."""
+    try:
+        out = subprocess.run(
+            ["ffprobe", "-v", "error", "-select_streams", "a",
+             "-show_entries", "packet=duration_time", "-of", "csv=p=0", ts_file],
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+            timeout=10, text=True, check=True).stdout.split()
+        # csv=p=0 prints one value per line with a trailing comma.
+        duration = sum(float(d.rstrip(",")) for d in out)
+        if duration <= 0:
+            raise ValueError("no audio packets")
+        return duration
+    except (subprocess.SubprocessError, OSError, ValueError) as e:
+        log.warning(f"ffprobe failed for {os.path.basename(ts_file)}: {e}")
+        return float(SEGMENT_DURATION)
+
+
+def segment_start_time(ts_file, duration):
+    """When the segment's audio began. ffmpeg closes a segment as it ends,
+    so the file's mtime minus its duration is the start, to within the
+    write latency. Uses UTC when UTC_TIME=true, else the container's local
+    time, matching ffmpeg's own EXT-X-PROGRAM-DATE-TIME in live.m3u8."""
+    start = datetime.fromtimestamp(os.path.getmtime(ts_file) - duration,
+                                   tz=timezone.utc)
+    if os.environ.get("UTC_TIME", "false").strip().lower() != "true":
+        start = start.astimezone()
+    return start
+
+
+def program_date_time(dt):
+    """Format like ffmpeg's hls muxer: 2026-10-05T06:44:43.389+0000."""
+    return (f"{dt.strftime('%Y-%m-%dT%H:%M:%S')}."
+            f"{dt.microsecond // 1000:03d}{dt.strftime('%z')}")
+
+
 def write_catchup_manifest(ts_files, manifest_path):
-    """Write a VOD HLS manifest for the given segment files."""
+    """Write a VOD HLS manifest for the given segment files, carrying the
+    same per-segment duration and EXT-X-PROGRAM-DATE-TIME as the live
+    manifest (orcanode #77), so recovered audio can be placed in time."""
+    entries = []
+    for ts_file in ts_files:
+        duration = segment_duration(ts_file)
+        entries.append((ts_file, duration, segment_start_time(ts_file, duration)))
+    target = max(1, round(max(d for _, d, _ in entries))) if entries else SEGMENT_DURATION
     with open(manifest_path, "w") as f:
         f.write("#EXTM3U\n")
         f.write("#EXT-X-VERSION:3\n")
-        f.write(f"#EXT-X-TARGETDURATION:{SEGMENT_DURATION}\n")
-        for ts_file in ts_files:
-            f.write(f"#EXTINF:{SEGMENT_DURATION}.0,\n")
+        f.write(f"#EXT-X-TARGETDURATION:{target}\n")
+        for ts_file, duration, start in entries:
+            f.write(f"#EXTINF:{duration:.6f},\n")
+            f.write(f"#EXT-X-PROGRAM-DATE-TIME:{program_date_time(start)}\n")
             f.write(os.path.basename(ts_file) + "\n")
         f.write("#EXT-X-ENDLIST\n")
 

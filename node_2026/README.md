@@ -196,6 +196,7 @@ Required variables:
 | `LOGDNA_INGESTION_KEY` | Optional. Set to forward `upload_s3.py`/`upload_flac_s3.py`/`catchup_s3.py` logs to Mezmo (formerly LogDNA) — warnings/errors from the uploader, and catch-up activity after an outage. Leave unset to skip centralized logging entirely; nothing else depends on it. |
 | `LC_ALL` | `C.UTF-8` |
 | `NO_UPLOAD` | `false` — set `true` to test the pipeline without S3 |
+| `REQUIRE_TIME_SYNC` | `true` — wait for the clock to be synchronised before capturing, so `EXT-X-PROGRAM-DATE-TIME` is trustworthy from the first segment. Set `false` only on a machine with no NTP daemon, such as a test host. |
 | `UTC_TIME` | `false` — FLAC filenames and HLS `EXT-X-PROGRAM-DATE-TIME` use the Pi's local time. Set `true` to use UTC instead. Either way the HLS timestamps carry a UTC offset, so they mark the same instant; only the FLAC filenames change meaning. |
 | `CHECK_LATENCY` | `false` — set `true` to inject a full-scale test tone at the top of every minute, for measuring capture-to-S3/player latency. Only has an effect when running `stream_sync_latency.sh` (see note below); ignored by the normal `stream_sync.sh`. |
 | `LATENCY_PULSE_DURATION_MS` | Optional. Length of the latency test tone in milliseconds. Default `50`. |
@@ -439,8 +440,10 @@ points at the folder you're now running from.
 
 `upload_s3.py` leaves segments on disk when uploads fail. When
 connectivity returns, `catchup_s3.py` finds stranded segments,
-generates a VOD manifest (`catchup.m3u8`), and uploads everything at
-low priority (2s between segments).
+generates a VOD manifest (`catchup.m3u8`) carrying each segment's
+measured duration and `EXT-X-PROGRAM-DATE-TIME` (derived from the
+file's close time, within a few tens of ms of the live manifest's), and
+uploads everything at low priority (2s between segments).
 
 On research nodes, `upload_flac_s3.py` likewise leaves FLAC files on
 disk when uploads fail, and `catchup_s3.py` uploads them to the archive
