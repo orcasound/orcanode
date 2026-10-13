@@ -1,5 +1,9 @@
 #!/bin/bash
 # Script for live DASH/HLS streaming lossy audio as AAC and/or archiving lossless audio as FLAC
+#
+# Set CHECK_LATENCY=true in .env to add a test tone at the top of every
+# minute for measuring latency (see section 8). Leave it false on
+# production nodes: the tone goes into the public stream and archive.
 
 # Ensure system binaries are in PATH
 export PATH=/usr/bin:/usr/local/bin:/usr/sbin:/bin:$PATH
@@ -76,7 +80,7 @@ for i in $(seq 1 30); do
     if aplay -l 2>/dev/null | grep -qi "$AUDIO_HW_ID"; then
         # Extracts the number from a line like "card 3: pisound [pisound]".
         CARD_NUM=$(aplay -l | grep -i "$AUDIO_HW_ID" | head -n 1 | awk -F'[: ]+' '{print $2}')
-        
+
         if [ -n "$CARD_NUM" ]; then
             SOUND_CARD="hw:$CARD_NUM,0"
             echo "Success! $AUDIO_HW_ID found at index $CARD_NUM. Using address: $SOUND_CARD"
@@ -182,6 +186,34 @@ jack_connect -s default system:capture_2 ffjack:input_2
 if [ "$NODE_LOOPBACK" = "true" ]; then
     jack_connect system:capture_1 system:playback_1
     jack_connect system:capture_2 system:playback_2
+fi
+
+# --- 8. LATENCY TEST MARKER INJECTION (optional) ---
+# When CHECK_LATENCY=true, mixes a short full-scale tone burst into the live
+# feed at the top of every minute (wall-clock :00), on top of the real
+# capture signal, via JACK's normal additive port mixing (ffjack:input_1/2
+# already receive system:capture_1/2 above; JACK sums whatever else is also
+# connected there).
+#
+# This uses a short tone (default 50ms) rather than a literal single sample:
+# an isolated one-sample impulse can be smoothed away by AAC's lossy
+# psychoacoustic encoding, whereas a brief full-scale tone survives
+# transcoding and is easy to pick out by ear or on a waveform/spectrogram in
+# both the archived FLAC/HLS output in S3 and in live playback. Compare the
+# "LATENCY MARKER injected at ..." timestamp below against the wall-clock
+# time the marker is actually observed in S3 / the player to get the
+# end-to-end latency.
+#
+# The tone is written by latency_marker.py, a small JACK client that stays
+# connected to ffjack and schedules each tone on JACK's frame clock, so it
+# lands within a few ms of :00 with no cumulative drift. (ffmpeg can't be
+# used for this: its JACK support is input-only.) It runs with the same TZ
+# as ffmpeg (UTC_TIME), so its log lines up with FLAC/HLS timestamps.
+CHECK_LATENCY=${CHECK_LATENCY:-false}
+
+if [ "$CHECK_LATENCY" = "true" ]; then
+    echo "*** CHECK_LATENCY=true: injecting a full-scale ${LATENCY_PULSE_DURATION_MS:-50}ms, ${LATENCY_PULSE_FREQ_HZ:-1000}Hz test tone into the stream at the top of every minute. Set CHECK_LATENCY=false in .env for normal operation. ***"
+    "${FFMPEG_TZ[@]}" python3 latency_marker.py &
 fi
 
 # Launch Python uploaders

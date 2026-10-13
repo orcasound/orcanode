@@ -133,6 +133,7 @@ nano .env
 | `NO_UPLOAD` | Set `true` temporarily | Recommended for first boot — verify segments generate locally before enabling live S3 upload with a brand-new `NODE_NAME`. Flip to `false` once verified (see Step 6). |
 | `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | Usually unchanged | Same bucket, same credentials — unless this node should log in under a separate IAM identity. |
 | `UTC_TIME` | Usually unchanged | `false` = FLAC filenames in the Pi's local time, `true` = UTC. Keep it the same as the other nodes so archive filenames across nodes use one time zone. Missing from `.env` (older clones) means `false`. |
+| `CHECK_LATENCY` | **Set `false`** (unless this is a test node) | If the source node was used for latency testing, `true` would put a test tone into this node's public stream every minute. The startup log shows a `*** CHECK_LATENCY=true ...` line when it's on. |
 | `LOGDNA_INGESTION_KEY` | Usually unchanged | Shared Mezmo/LogDNA ingestion key, if set; logs from all nodes land in the same place, distinguished by the `hostname` each node sends (its `NODE_NAME`). |
 | Everything else (`SAMPLE_RATE`, `CHANNELS`, `SEGMENT_DURATION`, `FLAC_DURATION`, `REGION`, `LC_ALL`) | Usually unchanged | Hardware/format constants, not node-specific. |
 

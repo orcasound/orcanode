@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Latency test marker for stream_sync_latency.sh (CHECK_LATENCY=true).
+"""Latency test marker started by stream_sync.sh when CHECK_LATENCY=true.
 
 Registers a JACK client, connects its outputs to ffjack's inputs once, and
 at the top of every wall-clock minute writes a short full-scale tone into
@@ -12,7 +12,7 @@ Python scheduling jitter. Each minute logs:
 
     LATENCY MARKER injected at <ISO time> (epoch <seconds>, UTC_TIME=...)
 
-The time zone follows TZ, which stream_sync_latency.sh sets from UTC_TIME
+The time zone follows TZ, which stream_sync.sh sets from UTC_TIME
 so the log lines up with the FLAC filenames and HLS timestamps.
 """
 

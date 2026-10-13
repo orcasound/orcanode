@@ -40,7 +40,7 @@ RUN usermod -aG audio root
 WORKDIR /app
 COPY . .
 
-RUN chmod +x stream_sync.sh stream_sync_latency.sh
+RUN chmod +x stream_sync.sh
 ###### Runtime #########################################################
 
 CMD ["./stream_sync.sh"]

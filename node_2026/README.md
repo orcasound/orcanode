@@ -197,7 +197,7 @@ Required variables:
 | `LC_ALL` | `C.UTF-8` |
 | `NO_UPLOAD` | `false` — set `true` to test the pipeline without S3 |
 | `UTC_TIME` | `false` — FLAC filenames and HLS `EXT-X-PROGRAM-DATE-TIME` use the Pi's local time. Set `true` to use UTC instead. Either way the HLS timestamps carry a UTC offset, so they mark the same instant; only the FLAC filenames change meaning. |
-| `CHECK_LATENCY` | `false` — set `true` to inject a full-scale test tone at the top of every minute, for measuring capture-to-S3/player latency. Only has an effect when running `stream_sync_latency.sh` (see note below); ignored by the normal `stream_sync.sh`. |
+| `CHECK_LATENCY` | `false` — set `true` to inject a full-scale test tone at the top of every minute, for measuring capture-to-S3/player latency (see note below). **Keep `false` on production nodes** — the tone goes into the public stream and archive. |
 | `LATENCY_PULSE_DURATION_MS` | Optional. Length of the latency test tone in milliseconds. Default `50`. |
 | `LATENCY_PULSE_FREQ_HZ` | Optional. Frequency of the latency test tone in Hz. Default `1000`. |
 
@@ -205,17 +205,11 @@ Required variables:
 > accumulate locally in `/tmp/<NODE_NAME>/hls/` so you can verify the
 > pipeline end-to-end before enabling live uploads.
 
-> **Note:** `CHECK_LATENCY` is read by `stream_sync_latency.sh`, a
-> diagnostic copy of `stream_sync.sh` that also starts
+> **Note:** with `CHECK_LATENCY=true`, `stream_sync.sh` also starts
 > `latency_marker.py`, a small JACK client that mixes the tone into the
-> feed at the top of each minute. To use it, override the container command, e.g. add to
-> `docker-compose.yml` (or an override file):
-> ```yaml
-> command: ./stream_sync_latency.sh
-> ```
-> It launches the same uploaders as `stream_sync.sh` — `upload_s3.py`
-> and `catchup_s3.py`, plus `upload_flac_s3.py` on `research` nodes — so
-> the marker tone reaches S3 by the normal paths.
+> feed at the top of each minute. Turn it on or off by editing `.env` and
+> running `docker compose up -d` — no rebuild or `docker-compose.yml`
+> change needed. The tone reaches S3 by the normal upload paths.
 > Then check the container logs for `LATENCY MARKER injected at ...`
 > lines, and compare that wall-clock timestamp against when the tone
 > actually shows up in the archived S3 files (HLS segments, and on
