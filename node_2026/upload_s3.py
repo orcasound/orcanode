@@ -22,6 +22,10 @@ PATH = os.path.join(BASEPATH, "hls")
 ARCHIVE_PATH = os.path.join(BASEPATH, "archive")
 LIVE_MANIFEST = "live.m3u8"
 ARCHIVE_MANIFEST = "archive.m3u8"
+# Playlists and latest.txt change in place, so browsers must revalidate
+# them; without a Cache-Control header they cache them heuristically and
+# a listener can keep requesting an old session. .ts segments never change.
+NO_CACHE = {'CacheControl': 'no-cache'}
 
 # REGION = os.environ["REGION"]
 LOGLEVEL = logging.DEBUG
@@ -111,7 +115,11 @@ def s3_copy_file(path, filename):
         uploadkey = os.path.join(uploadpath, filename)
         log.debug('upload key: ' + uploadkey)
         try:
-            resource.meta.client.upload_file(uploadfile, BUCKET, uploadkey)
+            extra_args = None
+            if filename.endswith('.m3u8') or filename == 'latest.txt':
+                extra_args = NO_CACHE
+            resource.meta.client.upload_file(uploadfile, BUCKET, uploadkey,
+                                             ExtraArgs=extra_args)
         except Exception as e:
             log.critical('error uploading to S3: ' + str(e))
             return
@@ -219,7 +227,7 @@ class ArchiveManifest:
         try:
             boto3.resource('s3').meta.client.upload_file(
                 self.local_path, BUCKET, key,
-                ExtraArgs={'ContentType': 'application/x-mpegurl'})
+                ExtraArgs={'ContentType': 'application/x-mpegurl', **NO_CACHE})
             log.debug(f'uploaded {key} ({len(self.segments)} segments)')
             return True
         except Exception as e:
