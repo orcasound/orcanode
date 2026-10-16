@@ -177,8 +177,11 @@ can any other.
 
 ## Going forward
 
-As of the May 2026 update, `stream_sync.sh` uses `-hls_list_size 0` and the
-container restarts at midnight via crontab.  Each calendar day now gets its
-own timestamp directory with a `live.m3u8` that grows to include every segment
-for that day.  `repair_manifests.py` is only needed for sessions recorded
-before that change.
+From May 2026, `stream_sync.sh` used `-hls_list_size 0`, so `live.m3u8`
+grew to include every segment for the day.  That made the playlist too slow
+for the player to download, so `live.m3u8` is now a rolling window of the
+last 10 segments again, and `upload_s3.py` builds a separate `archive.m3u8`
+in each timestamp directory that lists every segment.  The container still
+restarts at midnight via crontab, so each calendar day gets its own
+directory.  `repair_manifests.py` skips any directory that has an
+`archive.m3u8`; it is only needed for sessions recorded before May 2026.

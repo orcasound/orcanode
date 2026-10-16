@@ -64,7 +64,7 @@ sudo usermod -aG audio "$REAL_USER"
 
 # --- 5. MIDNIGHT RESTART CRON JOB ---
 # Restarts the container at midnight each day so ffmpeg opens a fresh
-# timestamp directory on S3. This keeps each day's live.m3u8 to one
+# timestamp directory on S3. This keeps each day's archive.m3u8 to one
 # day's worth of segments rather than growing forever.
 CRON_JOB="0 0 * * * cd $PROJECT_DIR && docker compose restart"
 ( crontab -u "$REAL_USER" -l 2>/dev/null | grep -v "docker compose restart"; echo "$CRON_JOB" ) | crontab -u "$REAL_USER" -

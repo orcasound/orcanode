@@ -9,6 +9,7 @@ import boto3
 import numpy as np
 import subprocess
 import os
+import shutil
 import sys
 
 from logdna_handler import attach_logdna_handler
@@ -16,6 +17,11 @@ from logdna_handler import attach_logdna_handler
 NODE = os.environ["NODE_NAME"]
 BASEPATH = os.path.join("/tmp", NODE)
 PATH = os.path.join(BASEPATH, "hls")
+# Full-day archive manifests are kept here, outside the inotify-watched
+# hls tree, and uploaded next to live.m3u8 as archive.m3u8.
+ARCHIVE_PATH = os.path.join(BASEPATH, "archive")
+LIVE_MANIFEST = "live.m3u8"
+ARCHIVE_MANIFEST = "archive.m3u8"
 
 # REGION = os.environ["REGION"]
 LOGLEVEL = logging.DEBUG
@@ -121,7 +127,148 @@ def s3_copy_file(path, filename):
         log.critical('error uploading to S3: '+str(e))
 
 
+def parse_manifest(text):
+    """Split an HLS playlist into (header tags, segments).
+
+    Each segment is (uri, [tag lines before it]). EXT-X-ENDLIST is dropped.
+    """
+    header = []
+    segments = []
+    pending = []
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line == '#EXT-X-ENDLIST':
+            continue
+        if line.startswith(('#EXTINF', '#EXT-X-PROGRAM-DATE-TIME',
+                            '#EXT-X-DISCONTINUITY')):
+            pending.append(line)
+        elif line.startswith('#'):
+            if not segments and not pending:
+                header.append(line)
+        else:
+            segments.append((line, pending))
+            pending = []
+    return header, segments
+
+
+def header_value(header, tag, default):
+    for line in header:
+        if line.startswith(tag + ':'):
+            return line.split(':', 1)[1]
+    return default
+
+
+class ArchiveManifest:
+    """Full-day manifest for one timestamp directory, built by merging every
+    rolling live.m3u8 ffmpeg writes. Persisted locally so an uploader restart
+    does not lose the segments that already left the live window."""
+
+    def __init__(self, timestamp):
+        self.timestamp = timestamp
+        self.local_path = os.path.join(ARCHIVE_PATH, timestamp, ARCHIVE_MANIFEST)
+        self.version = '3'
+        self.target_duration = 0
+        self.media_sequence = None
+        self.segments = []
+        self.seen = set()
+        if os.path.exists(self.local_path):
+            with open(self.local_path) as f:
+                header, segments = parse_manifest(f.read())
+            self.version = header_value(header, '#EXT-X-VERSION', self.version)
+            self.target_duration = int(header_value(header, '#EXT-X-TARGETDURATION', '0'))
+            self.media_sequence = int(header_value(header, '#EXT-X-MEDIA-SEQUENCE', '0'))
+            self.segments = segments
+            self.seen = {uri for uri, _ in segments}
+
+    def merge(self, live_text):
+        """Append segments from live_text not seen yet; return count added."""
+        header, segments = parse_manifest(live_text)
+        self.version = header_value(header, '#EXT-X-VERSION', self.version)
+        self.target_duration = max(
+            self.target_duration,
+            int(header_value(header, '#EXT-X-TARGETDURATION', '0')))
+        live_seq = int(header_value(header, '#EXT-X-MEDIA-SEQUENCE', '0'))
+        added = 0
+        for i, (uri, tags) in enumerate(segments):
+            if uri in self.seen:
+                continue
+            if self.media_sequence is None:
+                self.media_sequence = live_seq + i
+            self.segments.append((uri, tags))
+            self.seen.add(uri)
+            added += 1
+        return added
+
+    def write(self):
+        os.makedirs(os.path.dirname(self.local_path), exist_ok=True)
+        lines = ['#EXTM3U',
+                 f'#EXT-X-VERSION:{self.version}',
+                 f'#EXT-X-TARGETDURATION:{self.target_duration}',
+                 f'#EXT-X-MEDIA-SEQUENCE:{self.media_sequence or 0}']
+        for uri, tags in self.segments:
+            lines.extend(tags)
+            lines.append(uri)
+        tmp = self.local_path + '.tmp'
+        with open(tmp, 'w') as f:
+            f.write('\n'.join(lines) + '\n')
+        os.replace(tmp, self.local_path)
+
+    def upload(self):
+        """Upload the local archive manifest; keep the local copy. Return True on success."""
+        key = os.path.join(NODE, 'hls', self.timestamp, ARCHIVE_MANIFEST)
+        try:
+            boto3.resource('s3').meta.client.upload_file(
+                self.local_path, BUCKET, key,
+                ExtraArgs={'ContentType': 'application/x-mpegurl'})
+            log.debug(f'uploaded {key} ({len(self.segments)} segments)')
+            return True
+        except Exception as e:
+            log.critical(f'error uploading {key} to S3: {e}')
+            return False
+
+
+def flush_old_archives():
+    """Upload and remove archive manifests left from earlier sessions.
+
+    A session's last archive upload can fail if the network was down when
+    the container restarted, so retry it here before discarding the copy.
+    """
+    try:
+        with open(os.path.join(BASEPATH, 'latest.txt')) as f:
+            current = f.read().strip()
+    except FileNotFoundError:
+        current = None
+    if not os.path.isdir(ARCHIVE_PATH):
+        return
+    for timestamp in sorted(os.listdir(ARCHIVE_PATH)):
+        if timestamp == current:
+            continue
+        archive = ArchiveManifest(timestamp)
+        if not os.path.exists(archive.local_path) or archive.upload():
+            shutil.rmtree(os.path.join(ARCHIVE_PATH, timestamp), ignore_errors=True)
+
+
+archives = {}
+
+
+def update_archive(path):
+    """Merge the just-written live.m3u8 in path into that session's archive."""
+    try:
+        with open(os.path.join(path, LIVE_MANIFEST)) as f:
+            live_text = f.read()
+    except FileNotFoundError:
+        return
+    timestamp = os.path.basename(path)
+    archive = archives.get(timestamp)
+    if archive is None:
+        archive = archives[timestamp] = ArchiveManifest(timestamp)
+    if archive.merge(live_text):
+        archive.write()
+        archive.upload()
+
+
 def _main():
+    flush_old_archives()
     # latest.txt is uploaded after the first manifest, not at startup.
     # This ensures the player can find segments when it reads the timestamp.
     latest_txt_uploaded = False
@@ -135,6 +282,9 @@ def _main():
                     s3_copy_file(path, filename)
             if type_names[0] == 'IN_MOVED_TO':
                     log.debug('Recieved a new file ' + filename)
+                    # Read live.m3u8 before s3_copy_file removes it.
+                    if filename == LIVE_MANIFEST:
+                        update_archive(path)
                     s3_copy_file(path, filename)
             if not latest_txt_uploaded and filename.endswith('.ts'):
                 log.debug('First segment uploaded — now publishing latest.txt')

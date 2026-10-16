@@ -5,7 +5,8 @@ repair_manifests.py
 Scans S3 timestamp directories for a node and repairs any live.m3u8 that
 covers fewer segments than the directory actually contains.  This fixes
 sessions recorded when hls_list_size was small (e.g. 5), leaving most
-segments with no manifest entry.
+segments with no manifest entry.  Sessions that have an archive.m3u8
+(the full-day manifest upload_s3.py builds) are skipped.
 
 For each missing segment the script derives an approximate
 EXT-X-PROGRAM-DATE-TIME by anchoring on the exact timestamp of the first
@@ -81,6 +82,16 @@ def fetch_object(s3, bucket, key):
     except ClientError as e:
         if e.response['Error']['Code'] in ('NoSuchKey', '404'):
             return None
+        raise
+
+
+def object_exists(s3, bucket, key):
+    try:
+        s3.head_object(Bucket=bucket, Key=key)
+        return True
+    except ClientError as e:
+        if e.response['Error']['Code'] in ('NoSuchKey', '404'):
+            return False
         raise
 
 
@@ -238,6 +249,12 @@ def process_dir(s3, bucket, prefix, is_live, dry_run, s3_write=None):
     all_ts = list_ts_files(s3, bucket, prefix)
     if not all_ts:
         return 'skip', 'no .ts files'
+
+    # Sessions recorded since live.m3u8 became a short rolling window have
+    # a full archive.m3u8 from upload_s3.py; their live.m3u8 is short on
+    # purpose and must not be "repaired" back to full length.
+    if object_exists(s3, bucket, prefix + 'archive.m3u8'):
+        return 'ok', 'has archive.m3u8, live.m3u8 is a rolling window'
 
     manifest_key = prefix + 'live.m3u8'
     content = fetch_object(s3, bucket, manifest_key)

@@ -20,8 +20,9 @@ On startup `stream_sync.sh`:
 2. Discovers the Pisound ALSA device
 3. Starts `jackd` with the discovered hw address
 4. Launches ffmpeg to capture from JACK and write:
-   - **hls-only**: HLS segments (`.ts`) + growing `live.m3u8` (all
-     segments for the day)
+   - **hls-only**: HLS segments (`.ts`) + a short rolling `live.m3u8`
+     (last 10 segments, for the player); `upload_s3.py` also builds
+     `archive.m3u8` listing every segment for the day
    - **research**: same HLS output, plus lossless FLAC archive chunks
 
    Both modes embed absolute timestamps with a UTC offset (`EXT-X-PROGRAM-DATE-TIME`)
@@ -253,7 +254,7 @@ After the first build, Docker manages the container automatically:
 - Docker enabled at boot — container starts on every reboot
 - crontab (installed by `setup.sh`) restarts at midnight each night so
   each calendar day gets its own S3 timestamp directory and a complete
-  `live.m3u8` covering only that day
+  `archive.m3u8` covering only that day
 
 Watch the startup logs:
 
@@ -311,12 +312,16 @@ Segments are stored under a timestamp subdirectory, e.g.:
 s3://audio-orcasound-net/<NODE_NAME>/hls/<timestamp>/live000.ts
 ```
 
-The live manifest (`live.m3u8`) grows throughout the day, accumulating
-every segment since the last midnight restart. Inspect it to confirm
-`program_date_time` tags:
+The live manifest (`live.m3u8`) is a rolling window of the last 10
+segments, so the player can load it quickly. The archive manifest
+(`archive.m3u8`) grows throughout the day, listing every segment since
+the last midnight restart; orcasite should read this one to find
+segments. Old `.ts` files are never deleted from S3. Inspect the
+manifests to confirm `program_date_time` tags:
 
 ```bash
 aws s3 cp s3://audio-orcasound-net/<NODE_NAME>/hls/<timestamp>/live.m3u8 -
+aws s3 cp s3://audio-orcasound-net/<NODE_NAME>/hls/<timestamp>/archive.m3u8 -
 ```
 
 Check the upload log for RMS values (healthy signal = RMS > 100):
