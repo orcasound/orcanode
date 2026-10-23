@@ -1,0 +1,7 @@
+.env
+.env.template
+.env_actual
+.git
+*.log
+.venv/
+__pycache__/
