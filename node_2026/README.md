@@ -436,10 +436,16 @@ points at the folder you're now running from.
 
 ## Internet Outage Recovery
 
-`upload_s3.py` leaves segments on disk when uploads fail. When
-connectivity returns, `catchup_s3.py` finds stranded segments,
-generates a VOD manifest (`catchup.m3u8`), and uploads everything at
-low priority (2s between segments).
+`upload_s3.py` leaves segments on disk when uploads fail. On a slow
+link it also skips any segment more than 3 segment durations old when
+it gets to it, so it stays at the live edge instead of falling further
+behind. `catchup_s3.py` picks up segments left on disk for more than
+5 minutes, generates a VOD manifest (`catchup.m3u8`), and uploads
+everything at low priority (2s between segments).
+
+`archive.m3u8` is rebuilt locally on every segment but uploaded at most
+every 5 minutes, since it grows all day; the final version is uploaded
+after the midnight restart.
 
 On research nodes, `upload_flac_s3.py` likewise leaves FLAC files on
 disk when uploads fail, and `catchup_s3.py` uploads them to the archive

@@ -55,8 +55,10 @@ if "BUCKET_TYPE" in os.environ:
         ARCHIVE_BUCKET = "dev-archive-orcasound-net"
 
 # A segment is stranded if it is older than this — gives upload_s3.py
-# enough time to handle it first before catchup touches it.
-STALE_AGE = SEGMENT_DURATION * 3
+# enough time to handle it first before catchup touches it. Kept well
+# above upload_s3.py's LIVE_LAG_LIMIT so that on a slow link catchup does
+# not compete with the live uploader for the same recent segments.
+STALE_AGE = max(SEGMENT_DURATION * 30, 300)
 # Same idea for FLAC. ffmpeg keeps writing to the current FLAC file, so its
 # mtime stays fresh and it is never picked up while still being recorded.
 FLAC_STALE_AGE = FLAC_DURATION * 3
@@ -173,10 +175,9 @@ def catchup_session(ts_dir, ts_files):
     os.remove(manifest_path)
     log.info(f"Catchup manifest uploaded for {timestamp} ({len(ts_files)} segments)")
 
+    # No connectivity probe per file: on a slow link it costs an extra
+    # HTTPS round trip each time, and a failed upload already stops here.
     for ts_file in ts_files:
-        if not is_connected():
-            log.warning("Connectivity lost mid-catchup, pausing.")
-            return False
         if s3_upload(ts_file, s3_key_for(ts_file)):
             try:
                 os.remove(ts_file)
@@ -222,9 +223,6 @@ def catchup_hls_round():
 def catchup_flac(flac_files):
     """Upload stranded FLAC files to the archive bucket, oldest first."""
     for flac_file in flac_files:
-        if not is_connected():
-            log.warning("Connectivity lost mid-FLAC-catchup, pausing.")
-            return False
         if s3_upload(flac_file, s3_key_for(flac_file), bucket=ARCHIVE_BUCKET,
                      extra_args={"ContentType": "audio/flac"}):
             try:

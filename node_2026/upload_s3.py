@@ -11,6 +11,7 @@ import subprocess
 import os
 import shutil
 import sys
+import time
 
 from logdna_handler import attach_logdna_handler
 
@@ -26,6 +27,15 @@ ARCHIVE_MANIFEST = "archive.m3u8"
 # them; without a Cache-Control header they cache them heuristically and
 # a listener can keep requesting an old session. .ts segments never change.
 NO_CACHE = {'CacheControl': 'no-cache'}
+
+SEGMENT_DURATION = int(os.environ.get("SEGMENT_DURATION", "10").strip())
+# On a slow link this single-threaded loop can fall behind ffmpeg. A .ts
+# older than this when its event is handled is left on disk for
+# catchup_s3.py, so the uploader skips ahead to the live edge.
+LIVE_LAG_LIMIT = SEGMENT_DURATION * 3
+# archive.m3u8 grows with every segment for the whole session, so it is
+# uploaded at most this often rather than once per segment.
+ARCHIVE_UPLOAD_INTERVAL = 300
 
 # REGION = os.environ["REGION"]
 LOGLEVEL = logging.DEBUG
@@ -179,6 +189,7 @@ class ArchiveManifest:
         self.media_sequence = None
         self.segments = []
         self.seen = set()
+        self.last_upload = 0.0
         if os.path.exists(self.local_path):
             with open(self.local_path) as f:
                 header, segments = parse_manifest(f.read())
@@ -272,7 +283,27 @@ def update_archive(path):
         archive = archives[timestamp] = ArchiveManifest(timestamp)
     if archive.merge(live_text):
         archive.write()
-        archive.upload()
+        # The local copy is always current; S3 lags by at most
+        # ARCHIVE_UPLOAD_INTERVAL, and flush_old_archives() sends the
+        # final version after a restart.
+        now = time.monotonic()
+        if now - archive.last_upload >= ARCHIVE_UPLOAD_INTERVAL:
+            if archive.upload():
+                archive.last_upload = now
+
+
+def is_stale_segment(path, filename):
+    """True if a .ts event is handled too long after ffmpeg closed the file."""
+    if not filename.endswith('.ts'):
+        return False
+    try:
+        age = time.time() - os.path.getmtime(os.path.join(path, filename))
+    except FileNotFoundError:
+        return False  # s3_copy_file logs and skips it
+    if age > LIVE_LAG_LIMIT:
+        log.warning(f'Uploader {age:.0f}s behind, leaving {filename} for catchup')
+        return True
+    return False
 
 
 def _main():
@@ -287,7 +318,8 @@ def _main():
             if type_names[0] == 'IN_CLOSE_WRITE':
                 if 'tmp' not in filename:
                     log.debug('Recieved a new file ' + filename)
-                    s3_copy_file(path, filename)
+                    if not is_stale_segment(path, filename):
+                        s3_copy_file(path, filename)
             if type_names[0] == 'IN_MOVED_TO':
                     log.debug('Recieved a new file ' + filename)
                     # Read live.m3u8 before s3_copy_file removes it.
