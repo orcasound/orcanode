@@ -458,6 +458,30 @@ own separate 500 MB limit.
 No configuration required — this runs automatically alongside
 `upload_s3.py`.
 
+**Staying alive:** nothing restarts `catchup_s3.py` if it exits (only
+the midnight restart relaunches it), so an unexpected error in one
+round is logged with its traceback (forwarded to Mezmo) and the next
+round, 30s later, tries again. The disk guard also skips files that
+`upload_s3.py` removed after the scan instead of crashing on them.
+Before this, catchup could die early in a session and leave every
+segment dropped by a later network stall on the Pi until the next
+restart, and with a stale crontab path that next restart never came.
+
+**Checking it:** segments listed in `archive.m3u8` but missing from S3
+point to catchup not running. Check from the node folder (run these
+inside the container, where the venv with `boto3` lives; running
+`python3 catchup_s3.py` on the Pi itself fails with
+`No module named 'boto3'` and would scan the wrong `/tmp`):
+
+```bash
+docker compose exec streaming sh -c 'ps aux | grep catchup | grep -v grep'
+docker compose exec streaming sh -c 'ls /tmp/$NODE_NAME/hls/*/'
+docker compose logs streaming | grep -E "catchup|round failed"
+```
+
+If catchup isn't running, `docker compose restart` relaunches it and it
+uploads whatever is stranded.
+
 ---
 
 ## Centralized Logging (Mezmo / LogDNA)

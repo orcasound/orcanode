@@ -122,8 +122,15 @@ def total_size(paths):
 
 def enforce_disk_guard(stranded, max_bytes=MAX_STRANDED_BYTES):
     """Delete oldest stranded files if total exceeds max_bytes."""
-    # Sort oldest first (by mtime)
-    aged = sorted(stranded, key=lambda p: os.path.getmtime(p))
+    # Sort oldest first (by mtime). upload_s3.py may remove a file after
+    # the scan, so drop vanished files rather than crash on them.
+    mtimes = {}
+    for p in stranded:
+        try:
+            mtimes[p] = os.path.getmtime(p)
+        except FileNotFoundError:
+            pass
+    aged = sorted(mtimes, key=mtimes.get)
     while total_size(aged) > max_bytes and aged:
         victim = aged.pop(0)
         try:
@@ -264,10 +271,18 @@ def catchup_flac_round():
 
 def _main():
     log.info("Catchup uploader started.")
+    # Nothing restarts this process if it exits, so an unexpected error in
+    # one round is logged and the next round tries again.
     while True:
         time.sleep(SCAN_INTERVAL)
-        catchup_hls_round()
-        catchup_flac_round()
+        try:
+            catchup_hls_round()
+        except Exception:
+            log.exception("HLS catch-up round failed")
+        try:
+            catchup_flac_round()
+        except Exception:
+            log.exception("FLAC catch-up round failed")
 
 
 if __name__ == "__main__":
