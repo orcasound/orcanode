@@ -46,18 +46,18 @@ Each restart time folder contains the following:
 
 1. a `live.m3u8` text file containing a list of all audio files in the folder.  The format of the
    M3U8 file is specified in [RFC 8216](https://www.rfc-editor.org/info/rfc8216/).
-   The M3U8 file will contain the basic tags (`EXTM3U`, `EXT-X-VERSION`) speified in
+   The M3U8 file will contain the basic tags (`EXTM3U`, `EXT-X-VERSION`) specified in
    [RFC 8216 section 4.3.1](https://www.rfc-editor.org/info/rfc8216/#section-4.3.1), but may also
    contain other basic tags.  The M3U8 file can also contain various media segment tags
    specified in [RFC 8216 section 4.3.2](https://www.rfc-editor.org/info/rfc8216/#section-4.3.2),
-   where `EXTINF` is required, and `EXT-X-PROGRAM-DATA-TIME` is recommended but not required,
+   where `EXTINF` is required, and `EXT-X-PROGRAM-DATE-TIME` is recommended but not required,
    and others may also appear.  The `EXT-X-VERSION` value must be 3 or higher.
    The URI of the M3U8 file is "https://{bucket}.s3.amazonaws.com/rpi_{node_name}/hls/{unixtimestamp}/live.m3u8".
 
 2. a set of MPEG-2 Transport Stream (MPEG-TS) files named using the convention
    `live{number}.ts`, where {number} is an integer starting at 000 for the first file, and
    sequentially incrementing for each subsequent file. The integer is not limited to three digits,
-   so live1000.ts follows live999.ts and live 10000.ts follows live9999.ts for example.
+   so live1000.ts follows live999.ts and live10000.ts follows live9999.ts for example.
    [RFC 8216 section 3.2](https://www.rfc-editor.org/info/rfc8216/#section-3.2) describes the
    constraints and requirements for MPEG-TS segments used in HLS.  Such TS files in this folder
    are typically around 10 seconds long, but may be shorter or longer.  The associated `EXTINF`
