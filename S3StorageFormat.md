@@ -7,20 +7,17 @@ This document covers the layout of files that can be read by clients such as the
 
 ## Buckets
 
-The primary audio bucket is called `audio-orcasound-net` and can be browsed
-using the [Quilt audio-orcasound-net page](https://app.quilt.bio/b/audio-orcasound-net/tree/)
-which supports anonymous access.
+Nodes with `BUCKET_TYPE=prod` use the `audio-orcasound-net` bucket which can be browsed
+using the [Quilt audio-orcasound-net page](https://app.quilt.bio/b/audio-orcasound-net/tree/).
 
-Dev nodes can use the `dev-streaming-orcasound-net` bucket which can be browsed using the
-[Quilt dev-streaming-orcasound-net page](https://app.quilt.bio/b/dev-streaming-orcasound-net/tree/)
-which supports anonymous access.
+Nodes with `BUCKET_TYPE=dev` use the `dev-streaming-orcasound-net` bucket which can be browsed using the
+[Quilt dev-streaming-orcasound-net page](https://app.quilt.bio/b/dev-streaming-orcasound-net/tree/).
 
-At least one dev node instead uses the `streaming-orcasound-net` bucket which can be browsed
-using the [Quilt streaming-orcasound-net page](https://app.quilt.bio/b/streaming-orcasound-net/tree/)
-which does NOT support anonymous access.
+Nodes with `BUCKET_TYPE=custom` use a bucket specified by the node's `BUCKET_STREAMING` setting for HLS
+audio, and `BUCKET_ARCHIVE` for FLAC audio (if any).
 
-Each bucket contains a folder per hydrophone node. The folder name is the node's `NODE_NAME` value (normally `rpi_{node_name}`,
-e.g., `rpi_andrews_bay`), with contents as specified in the [Node Folders section](#node-folders).
+Each bucket contains a folder per hydrophone node. The folder name is the node's `NODE_NAME` value,
+with contents as specified in the [Node Folders section](#node-folders).
 
 ## Node folders
 
@@ -33,6 +30,10 @@ Each node folder contains the following:
 2. an `hls` folder, with contents as specified in the [HLS folders section](#hls-folders).
 
 3. (optionally) a `flac` folder, with contents as specified in the [FLAC folders section](#flac-folders).
+   This is used by a node when `NODE_TYPE=research` and absent when `NODE_TYPE=hls-only`.
+
+Note: when a node is confogured with `BUCKET_TYPE=custom`, the `flac` folder can appear in a different bucket,
+in which case there will be a `flac` folder with no `hls` folder, but this is not recommended.
 
 ## HLS folders
 
@@ -52,17 +53,17 @@ Each restart time folder contains the following:
    specified in [RFC 8216 section 4.3.2](https://www.rfc-editor.org/info/rfc8216/#section-4.3.2),
    where `EXTINF` is required, and `EXT-X-PROGRAM-DATE-TIME` is recommended but not required,
    and others may also appear.  The `EXT-X-VERSION` value must be 3 or higher.
-   The URI of the M3U8 file is "https://{bucket}.s3.amazonaws.com/rpi_{node_name}/hls/{unixtimestamp}/live.m3u8".
+   The URI of the M3U8 file is "https://{bucket}.s3.amazonaws.com/{NODE_NAME}/hls/{UNIX_TIMESTAMP}/live.m3u8".
 
 2. a set of MPEG-2 Transport Stream (MPEG-TS) files named using the convention
-   `live{number}.ts`, where {number} is an integer starting at 000 for the first file, and
+   `live{INDEX}.ts`, where `{INDEX}` is an integer starting at 000 for the first file, and
    sequentially incrementing for each subsequent file. The integer is not limited to three digits,
    so live1000.ts follows live999.ts and live10000.ts follows live9999.ts for example.
    [RFC 8216 section 3.2](https://www.rfc-editor.org/info/rfc8216/#section-3.2) describes the
    constraints and requirements for MPEG-TS segments used in HLS.  Such TS files in this folder
-   are typically around 10 seconds long, but may be shorter or longer.  The associated `EXTINF`
-   tag in the M3U8 file gives the audio file's duration with millisecond granularity.
-   The URI of an audio file is "https://{bucket}.s3.amazonaws.com/rpi_{node_name}/hls/{unixtimestamp}/live{index}.ts".
+   are approximately `SEGMENT_DURATION` (typically 10) seconds long, but may be shorter or longer.
+   The associated `EXTINF` tag in the M3U8 file gives the audio file's duration with millisecond granularity.
+   The URI of an audio file is "https://{bucket}.s3.amazonaws.com/{NODE_NAME}/hls/{UNIX_TIMESTAMP}/live{INDEX}.ts".
 
 Note: it is important that the M3U8 file contain all audio files in the folder, since various
 clients rely on this to provide uninterrupted playback of stored audio (e.g., within a bout).
@@ -72,6 +73,8 @@ of the entire bout may fail.
 ## FLAC folders
 
 Each `flac` folder, if present, contains a set of Free Lossless Audio Codec (FLAC) files named
-using the convention "YYYY-MM-DD_HH-MM-SS_rpi_{node_name}-{samplerate}-{channels}.flac" (e.g.,
-"2024-11-13_22-31-08_rpi_port_townsend-48000-1.flac").  The format of each file is as specified
-in [RFC 9639](https://www.rfc-editor.org/info/rfc9639/).
+using the convention "YYYY-MM-DD_HH-MM-SS_{NODE_NAME}-{SAMPLE_RATE}-{CHANNELS}.flac" (e.g.,
+"2024-11-13_22-31-08_rpi_port_townsend-48000-1.flac") using the UTC timestamp of the start of
+the audio segment.  The format of each file is as specified in
+[RFC 9639](https://www.rfc-editor.org/info/rfc9639/).  The duration of each FLAC file is around
+`FLAC_DURATION` seconds long (typically 30) but may be shorter or longer.
