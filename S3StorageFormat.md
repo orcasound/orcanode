@@ -32,7 +32,7 @@ Each node folder contains the following:
 3. (optionally) a `flac` folder, with contents as specified in the [FLAC folders section](#flac-folders).
    This is used by a node when `NODE_TYPE=research` and absent when `NODE_TYPE=hls-only`.
 
-Note: when a node is confogured with `BUCKET_TYPE=custom`, the `flac` folder can appear in a different bucket,
+Note: when a node is configured with `BUCKET_TYPE=custom`, the `flac` folder can appear in a different bucket,
 in which case there will be a `flac` folder with no `hls` folder, but this is not recommended.
 
 ## HLS folders
