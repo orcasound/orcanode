@@ -33,7 +33,7 @@ Each node folder contains the following:
    This is used by a node when `NODE_TYPE=research` and absent when `NODE_TYPE=hls-only`.
 
 Note: when a node is configured with `BUCKET_TYPE=custom`, the `flac` folder can appear in a different bucket,
-in which case there will be a `flac` folder with no `hls` folder, but this is not recommended.
+in which case the archive bucket contains a `flac` folder without `hls` or `latest.txt`; this split-bucket layout is not recommended.
 
 ## HLS folders
 
@@ -74,7 +74,7 @@ of the entire bout may fail.
 
 Each `flac` folder, if present, contains a set of Free Lossless Audio Codec (FLAC) files named
 using the convention "YYYY-MM-DD_HH-MM-SS_{NODE_NAME}-{SAMPLE_RATE}-{CHANNELS}.flac" (e.g.,
-"2024-11-13_22-31-08_rpi_port_townsend-48000-1.flac") using the UTC timestamp of the start of
-the audio segment.  The format of each file is as specified in
+"2024-11-13_22-31-08_rpi_port_townsend-48000-1.flac") using the timestamp of the start of
+the audio segment in the process/container's timezone.  The format of each file is as specified in
 [RFC 9639](https://www.rfc-editor.org/info/rfc9639/).  The duration of each FLAC file is around
 `FLAC_DURATION` seconds long (typically 30) but may be shorter or longer.
