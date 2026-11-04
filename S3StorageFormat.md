@@ -19,8 +19,8 @@ At least one dev node instead uses the `streaming-orcasound-net` bucket which ca
 using the [Quilt streaming-orcasound-net page](https://app.quilt.bio/b/streaming-orcasound-net/tree/)
 which does NOT support anonymous access.
 
-Each bucket contains a folder per hydrophone node using the bucket named using the format "rpi_{node_name}",
-e.g., "rpi_andrews_bay", with contents as specified in the [Node Folders section](#node-folders).
+Each bucket contains a folder per hydrophone node. The folder name is the node's `NODE_NAME` value (normally `rpi_{node_name}`,
+e.g., `rpi_andrews_bay`), with contents as specified in the [Node Folders section](#node-folders).
 
 ## Node folders
 
