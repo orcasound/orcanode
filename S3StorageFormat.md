@@ -53,7 +53,9 @@ Each restart time folder contains the following:
    specified in [RFC 8216 section 4.3.2](https://www.rfc-editor.org/info/rfc8216/#section-4.3.2),
    where `EXTINF` is required, and `EXT-X-PROGRAM-DATE-TIME` is recommended but not required,
    and others may also appear.  The `EXT-X-VERSION` value must be 3 or higher.
-   The URI of the M3U8 file is "https://{bucket}.s3.amazonaws.com/{NODE_NAME}/hls/{UNIX_TIMESTAMP}/live.m3u8".
+   The URI of the M3U8 file is "https://{BUCKET_STREAMING}.s3.amazonaws.com/{NODE_NAME}/hls/{UNIX_TIMESTAMP}/live.m3u8"
+   (or its equivalent, "https://s3-us-west-2.amazonaws.com/{BUCKET_STREAMING}/{NODE_NAME}/hls/{UNIX_TIMESTAMP}/live.m3u8", 
+   but the former is preferred).
 
 2. a set of MPEG-2 Transport Stream (MPEG-TS) files named using the convention
    `live{INDEX}.ts`, where `{INDEX}` is an integer starting at 000 for the first file, and
@@ -63,7 +65,9 @@ Each restart time folder contains the following:
    constraints and requirements for MPEG-TS segments used in HLS.  Such TS files in this folder
    are approximately `SEGMENT_DURATION` (typically 10) seconds long, but may be shorter or longer.
    The associated `EXTINF` tag in the M3U8 file gives the audio file's duration with millisecond granularity.
-   The URI of an audio file is "https://{bucket}.s3.amazonaws.com/{NODE_NAME}/hls/{UNIX_TIMESTAMP}/live{INDEX}.ts".
+   The URI of an audio file is "https://{BUCKET_STREAMING}.s3.amazonaws.com/{NODE_NAME}/hls/{UNIX_TIMESTAMP}/live{INDEX}.ts",
+   (or its equivalent, "https://s3-us-west-2.amazonaws.com/{BUCKET_STREAMING}/{NODE_NAME}/hls/{UNIX_TIMESTAMP}/live{INDEX}.ts", 
+   but the former is preferred).
 
 Note: it is important that the M3U8 file contain all audio files in the folder, since various
 clients rely on this to provide uninterrupted playback of stored audio (e.g., within a bout).
