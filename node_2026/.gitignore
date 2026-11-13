@@ -1,0 +1,15 @@
+# Credentials — never commit
+.env
+
+# Generated / local tooling
+.venv/
+__pycache__/
+*.pyc
+*.log
+
+# IDE and editor state
+.idea/
+.claude/
+
+# Stale working copies
+*\ (copy).*
