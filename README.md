@@ -22,7 +22,7 @@ An ARM or X86 device with a sound card (or other audio input devices) connected 
 
 ### Installing
 
-Create a base docker image for your architecture by running the script in /base/rpi or /base/amd64 as appropriate.  You will need to create a .env file as appropriate for your projects.  Here is an example of an .env file (tested/working as of June, 2021)...
+The container is built from `node/Dockerfile` and is self-contained (no separate base image step required).  You will need to create a `.env` file based on `node/.env.example` for your deployment.  Here is an example of an `.env` file...
 
 ```
 AWS_METADATA_SERVICE_TIMEOUT=5
@@ -43,11 +43,11 @@ LC_ALL=C.UTF-8
 ... except that the following fields are excised and will need to be added if you are integrating with the audio and logging systems of Orcasound: 
 
 ```
-AWSACCESSKEYID=YourAWSaccessKey
-AWSSECRETACCESSKEY=YourAWSsecretAccessKey
- 
-SYSLOG_URL=syslog+tls://syslog-a.logdna.com:YourLogDNAPort
-SYSLOG_STRUCTURED_DATA='logdna@YourLogDNAnumber key="YourLogDNAKey" tag="docker"
+AWS_ACCESS_KEY_ID=YourAWSaccessKeyId
+AWS_SECRET_ACCESS_KEY=YourAWSsecretAccessKey
+
+SYSLOG_URL=syslog://syslog-a.logdna.com:YourLogDNAPort
+SYSLOG_STRUCTURED_DATA='logdna@YourLogDNAnumber key="YourLogDNAKey" tag="docker"'
 ```
 
 (You can request keys via the #hydrophone-nodes channel in the Orcasound Slack. As of October, 2021, we are continuing to use AWS S3 for storage and LogDNA for live-logging and troubleshooting.)
@@ -64,7 +64,7 @@ Here are explanations of some of the .env fields:
 
 ## Running local tests
 
-At the root of the repository directory (where you also put your .env file) first copy the compose file you want to `docker-compose.yml`.  For example, if you have a Raspberry Pi and you want to use the prebuilt image, then copy `docker-compose.rpi-pull.yml` to `docker-compose.yml`.  Then run `docker-compose up -d`. Watch what happens using `htop`. If you want to verify files are being written to /tmp or /mnt directories, get the name of your streaming service using `docker-compose ps` (in this case `orcanode_streaming_1`) and then do `docker exec -it orcanode_streaming_1 /bin/bash` to get a bash shell within the running container.
+Go to the `node/` directory (where you also put your `.env` file).  Copy the compose file you want to `docker-compose.yml`.  For example, if you have a Raspberry Pi and you want to use the prebuilt image, then copy `docker-compose.rpi-pull.yml` to `docker-compose.yml`.  Then run `docker-compose up -d`. Watch what happens using `htop`. If you want to verify files are being written to /tmp or /mnt directories, get the name of your streaming service using `docker-compose ps` (in this case `orcanode_streaming_1`) and then do `docker exec -it orcanode_streaming_1 /bin/bash` to get a bash shell within the running container.
 
 ### Running an end-to-end test
 
@@ -91,9 +91,9 @@ If you would like to add a node to the Orcasound hydrophone network, contact adm
 
 ## Built With
 
-* [FFmpeg](https://www.ffmpeg.org/) - Uses ALSA to acquire audio data, then generates lossy streams and/or lossless archive files
-* [rsync](https://rsync.samba.org/) - Transfers files locally from /tmp to /mnt directories
-* [s3fs](https://github.com/s3fs-fuse/s3fs-fuse) - Used to transfer audio data from local device to S3 bucket(s)
+* [FFmpeg](https://www.ffmpeg.org/) - Uses JACK/ALSA to acquire audio data, then generates lossy streams and/or lossless archive files
+* [JACK](https://jackaudio.org/) - Low-latency audio server used to route audio from the sound card to FFmpeg
+* [boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html) - AWS SDK for Python, used to transfer audio data from the local device to S3 bucket(s)
 
 ## Contributing
 

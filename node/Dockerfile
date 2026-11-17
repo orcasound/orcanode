@@ -1,37 +1,58 @@
 # Node Dockerfile for hydrophone streaming
-# use base image for project
+# Multi-arch self-contained build for CI/CD deployment
 
-FROM orcastream/orcabase:latest
-MAINTAINER Orcasound <orcanode-devs@orcasound.net>
+FROM python:3.11-slim-bookworm
 
-###### hack to get ffmpeg to build
-# RUN apt-get update && apt-get install -y --no-install-recommends libraspberrypi-dev raspberrypi-kernel-headers
-# RUN git clone https://github.com/raspberrypi/userland.git
-# RUN cd userland/host_applications/linux/apps/hello_pi && ./rebuild.sh
+LABEL org.opencontainers.image.source="https://github.com/orcasound/orcanode"
+LABEL org.opencontainers.image.description="Orcasound hydrophone streaming node"
+LABEL org.opencontainers.image.authors="Orcasound <orcanode-devs@orcasound.net>"
 
+# Install system dependencies
+RUN export DEBIAN_FRONTEND=noninteractive \
+    && apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    jack-capture \
+    jackd2 \
+    alsa-utils \
+    git \
+    curl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-###### Install Jack  #################################
+# Install Python dependencies
+RUN pip3 install --no-cache-dir \
+    boto3 \
+    inotify
 
-ENV DEBIAN_FRONTEND noninteractive
-RUN apt-get update && apt-get install -y --no-install-recommends jack-capture
-RUN apt-get update && apt-get install -y --no-install-recommends jackd1
+# Set working directory
+WORKDIR /app
 
-# Install ALSA and GPAC
-#RUN apt-get update && apt-get install -y --no-install-recommends \
-#  alsa-utils \
-#  gpac
+# Copy node application files first
+COPY node/ ./
 
-############################### Copy files #####################################
+# Copy Python upload scripts from base directory (overwrites if they exist in node/)
+COPY base/upload_s3.py ./
+COPY base/upload_flac_s3.py ./
 
-COPY . .
+# Set environment defaults
+ENV SAMPLE_RATE=48000 \
+    STREAM_RATE=48000 \
+    CHANNELS=1 \
+    NODE_TYPE=hls-only
 
-################################## TODO ########################################
-# Do the following:
-#   - Add pisound driver curl command  
-#   - Add other audio drivers and configure via CLI if possible?
-#   - Remove "misc tools" and other installs no longer needed (upon Resin.io deployment)?
+# Make scripts executable
+RUN chmod +x *.sh
 
-################################# Miscellaneous ################################
+# Ensure .env.example is available for reference
+RUN if [ -f .env.example ]; then \
+        echo ".env.example is available at /app/.env.example"; \
+    else \
+        echo "Warning: .env.example not found"; \
+    fi
 
-# Clean up APT when done.
-RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+# Configure audio group limits for Jack
+RUN echo '@audio - memlock 256000' >> /etc/security/limits.conf && \
+    echo '@audio - rtprio 75' >> /etc/security/limits.conf
+
+# Run the streaming script
+CMD ["./stream.sh"]
