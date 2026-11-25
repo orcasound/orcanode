@@ -139,7 +139,7 @@ fi
 # No delete_segments: .ts files are removed locally by upload_s3.py after
 # upload and are never deleted from S3. upload_s3.py also builds the
 # full-day archive.m3u8 (every segment) that orcasite reads.
-LIVE_LIST_SIZE=10
+LIVE_LIST_SIZE=0
 
 if [ "$NODE_TYPE" = "research" ]; then
 	"${FFMPEG_TZ[@]}" nice -n -10 ffmpeg -f jack -i ffjack \
